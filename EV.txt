@@ -1,0 +1,120 @@
+// ---------------------------------------------------------------
+//
+// Subcircuit implementing the EV (VSG)
+//
+// pref, qref, and vref must be expressed in per unit. 
+// Positive power denotes power from DC to AC side (EV discharges).
+// V_NOM is the nominal RMS voltage (phase to ground) of the converter.
+// ---------------------------------------------------------------
+
+subckt EV bus01
+
+// CONVERTER PARAMETERS
+parameters V2_NOM=400 V1_NOM=20k S_NOM=100M F_NOM=50 N_EV=1 \
+	   W_NOM=2*pi*F_NOM I_NOM=S_NOM/(3*V2_NOM) Z_NOM= V2_NOM/(I_NOM) \
+	   R_NOM =Z_NOM L_NOM=Z_NOM/W_NOM C_NOM=1/(W_NOM*Z_NOM) \
+	   R_F_PU=0.001 L_F_PU=0.02  \
+	   R_T_PU=0.01  L_T_PU=0.059 \
+	   R_F = R_F_PU*R_NOM  L_F = L_F_PU*L_NOM \
+	   R_T = R_T_PU*R_NOM  L_T = L_T_PU*L_NOM \
+	   KP_I=0.142  KI_I=43.909  KP_PQ =0  KI_PQ = 33 \
+	   MAXDCGAIN=1G KP_PLL=490   KI_PLL=122.5k DYN=0 CP_SIGNAL=0
+	   
+// BATTERY PARAMETERS
+parameters N_SERIES=N_SERIES N_PARALLEL=N_PARALLEL R_INT=8m Q_NOM=33.1 SOC_0=0.82 \
+	   V_THRESHOLD=4 SOC_THRESHOLD=0.8 
+
+
+// LCL filter -- transformer, capacitor, inductor filter
+
+I_TOT     bus02   ics_d gnd ics_q   gnd bus01 powerec type=5
+I_EV      bus03   iev_d gnd iev_q  gnd bus02 powerec type=5
+V1        bus02   vcs_d  gnd vcs_q gnd powerec type=0
+
+Ts1       vsg01   bus03  tap  powertransformer a=V1_NOM/V2_NOM f0=F_NOM r=R_T/3*0+10u \
+                                          x=L_T*W_NOM/3*0 utype=1 dynamic=DYN vrating=V2_NOM \
+					  minkt=0.5 maxkt=1.5
+
+I0        vsg02   i0d_pan gnd i0q_pan gnd vsg01 powerec type=5
+Lf1       vsg02   vsg03  powerline  r=R_F/3 x=L_F*W_NOM/3 f0=F_NOM utype=1 \
+                                    dynamic=DYN
+
+// bus plitters in the 'd' and 'q' components
+V0   vsg02  v0d_pan gnd v0q_pan gnd powerec type=0
+Ec6  vsg03  ed_pan  gnd eq_pan  gnd powerec type=0
+
+// Power exchange of a single EV
+P_EV p_ev gnd vcs_d vcs_q iev_d iev_q vcvs \
+    func=v(vcs_d)*v(iev_d)+v(vcs_q)*v(iev_q)
+
+Q_EV q_ev gnd vcs_d vcs_q iev_d iev_q vcvs \
+    func=-v(vcs_d)*v(iev_q)+v(vcs_q)*v(iev_d)
+
+// Power exchange of multiple EVs (CHARGING STATION)
+P_CS p_cs gnd vcs_d vcs_q ics_d ics_q vcvs \
+    func=v(vcs_d)*v(ics_d)+v(vcs_q)*v(ics_q)
+
+Q_CS q_cs gnd vcs_d vcs_q ics_d ics_q vcvs \
+    func=-v(vcs_d)*v(ics_q)+v(vcs_q)*v(ics_d)
+
+
+// VSG controller
+CTRL v0d_pan v0q_pan i0d_pan i0q_pan ed_pan eq_pan vcs_d vcs_q iev_d iev_q EV_CONTROLLER \
+	V_AC_NOM=V2_NOM*sqrt(3)  W_NOM=W_NOM    S_NOM=S_NOM \
+	MAXDCGAIN=MAXDCGAIN  KP_PLL=KP_PLL  KI_PLL=KI_PLL \
+	N_SERIES=N_SERIES N_PARALLEL=N_PARALLEL R_INT=R_INT Q_NOM=Q_NOM \
+	SOC_0=SOC_0 V_THRESHOLD=V_THRESHOLD SOC_THRESHOLD=SOC_THRESHOLD \ 
+	KP_I=KP_I   KI_I=KI_I  KP_PQ=KP_PQ  KI_PQ = KI_PQ \ 
+        L_F_PU=L_F_PU V_DC_NOM=800 CP_SIGNAL=CP_SIGNAL N_EV=N_EV
+ends
+
+// ---------------------------------------------------------------
+//
+// Subcircuit implementing the EV_SYNTHETHIC (LOAD)
+//
+// pref, qref, and vref must be expressed in per unit. 
+// Positive power denotes power from DC to AC side (EV discharges).
+// V_NOM is the nominal RMS voltage (phase to ground) of the converter.
+// ---------------------------------------------------------------
+
+subckt EV_POW bus01
+
+// LOAD PARAMETERS
+parameters V2_NOM=400 V1_NOM=20k S_NOM=100M F_NOM=50 \
+	   W_NOM=2*pi*F_NOM  SOC_0=0.82
+
+parameters ap=1 bp=0.001 np=-2 cp=0.07 dp=0.001 ep=0.96 fp=0.23 CP_SIGNAL=1
+
+	   
+I1        bus02   i1d gnd i1q gnd bus01 powerec type=5
+V1        bus02   v1d gnd v1q gnd powerec type=0
+
+TR        bus03   bus02  tap  powertransformer a=V1_NOM/V2_NOM f0=F_NOM r=10u \
+                                          x=0 utype=1 dynamic=DYN vrating=V2_NOM \
+					  minkt=0.5 maxkt=1.5
+
+I2        bus04  i2d gnd i2q gnd bus03 powerec type=5
+V2        bus04  v2d gnd v2q gnd powerec type=0
+
+
+// Power exchange of a single EV
+P_LOAD p_load gnd v2d v2q i2d i2q vcvs \
+    func=v(v2d)*v(i2d)+v(v2q)*v(i2q)
+
+P_EXT p_ext gnd v1d v1q i1d i1q vcvs \
+    func=v(v1d)*v(i1d)+v(v1q)*v(i1q)
+
+// Power exchange of a single EV
+Q_LOAD q_load gnd v2d v2q i2d i2q vcvs \
+    func=-v(v2d)*v(i2q)+v(v2q)*v(i2d)
+
+Q_EXT q_ext gnd v1d v1q i1d i1q vcvs \
+    func=-v(v1d)*v(i1q)+v(v1q)*v(i1d)
+
+EV_LOAD v2d v2q prec EV_LOAD \
+	V_NOM=V2_NOM S_NOM=S_NOM SOC_0=SOC_0 \
+	ap=ap bp=bp np=np cp=cp dp=dp ep=ep fp=fp CP_SIGNAL=CP_SIGNAL
+
+ends
+
+

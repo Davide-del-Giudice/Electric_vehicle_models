@@ -1,0 +1,185 @@
+// ------------------------------------------- //
+// WHAT TO DO IN CASE OF BASE_CASE BEGINS HERE //
+// ------------------------------------------- //
+
+#ifdef BASE_CASE
+
+Dc0    dc nettype=1 sparse=3 print=no uic=1
+Tr0  tran nettype=1 sparse=3 tstop=100 uic=1 acntrl=3 saman=0
+Dcx    dc nettype=1 sparse=3 restart=no time=0 print=no fixsm=yes
+
+Sweep control begin
+        k = 0;
+	
+	SWEEP_LAMBDA sweep start=START_LAMBDA step=STEP_LAMBDA  stop=END_LAMBDA  param="LAMBDA" begin
+
+                k = k + 1;
+
+	printf("LAMBDA: %e \n",LAMBDA);
+
+	Dc1    dc nettype=1 sparse=3 restart=no time=0 print=yes //iabstol=1u fixsm=yes
+        Pz     pz nettype=1 pf=1 shift=8.030027e-01 //annotate=0
+
+	Eig = get("Pz.poles");
+                
+
+	POLES(:,k) = Eig;
+	OVERLOAD(k)  = LAMBDA;
+
+        end
+
+#ifdef SAVE
+save("mat5","OVERLOAD_DYN_BASE.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#endif
+
+endcontrol
+
+#endif
+
+// ------------------------------------------- //
+// WHAT TO DO IN CASE OF BASE_CASE ENDS HERE   //
+// ------------------------------------------- //
+
+// ------------------------------------------- //
+// WHAT TO DO IN CASE OF CASE_EV BEGINS HERE   //
+// ------------------------------------------- //
+
+#ifdef CASE_EV
+
+//Dc0    dc nettype=1 sparse=3 print=no uic=1
+//Tr0  tran nettype=1 sparse=3 tstop=100 uic=1 acntrl=3 saman=0 ireltol=0.01m vreltol=0.01m
+//Dcx    dc nettype=1 sparse=3 restart=no time=0 print=yes fixsm=yes load="overload_dyn.dc"
+Dcx    dc nettype=1 sparse=3 time=0 print=yes fixsm=yes load="overload_dyn.dc"
+
+Sweep control begin
+        k = 0;
+	SWEEP_LAMBDA sweep start=START_LAMBDA step=STEP_LAMBDA  stop=END_LAMBDA  param="LAMBDA" begin
+
+                k = k + 1;
+
+	Dc1    dc nettype=1 sparse=3 restart=no time=0 print=yes //iabstol=1u fixsm=yes
+        Pz     pz nettype=1 pf=1 shift=8.030027e-01 //annotate=0
+
+	Eig = get("Pz.poles");
+
+	POLES(:,k) = Eig;
+	OVERLOAD(k)  = LAMBDA;
+
+       end
+
+#ifdef SAVE
+
+#ifdef LFP
+#ifdef CCCV
+save("mat5","OVERLOAD_DYN_LFP_CCCV_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#else
+save("mat5","OVERLOAD_DYN_LFP_CPCV_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#endif
+#endif
+
+#ifdef LMO
+#ifdef CCCV
+save("mat5","OVERLOAD_DYN_LMO_CCCV_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#else
+save("mat5","OVERLOAD_DYN_LMO_CPCV_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#endif
+#endif
+
+#ifdef NCA
+#ifdef CCCV
+save("mat5","OVERLOAD_DYN_NCA_CCCV_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#else
+save("mat5","OVERLOAD_DYN_NCA_CPCV_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#endif
+#endif
+
+#ifdef NMC
+#ifdef CCCV
+save("mat5","OVERLOAD_DYN_NMC_CCCV_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#else
+save("mat5","OVERLOAD_DYN_NMC_CPCV_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#endif
+#endif
+
+#endif
+endcontrol 
+
+#endif
+
+// ------------------------------------------- //
+// WHAT TO DO IN CASE OF CASE_EV ENDS HERE     //
+// ------------------------------------------- //
+
+
+// ----------------------------------------------- //
+// WHAT TO DO IN CASE OF CASE_EV_SYNTH BEGINS HERE //
+// ----------------------------------------------- //
+
+#ifdef CASE_EV_SYNTH
+
+//Dc0    dc nettype=1 sparse=3 print=no uic=1
+//Tr0  tran nettype=1 sparse=3 tstop=100 uic=1 acntrl=3 saman=0
+//Tr0  tran nettype=1 sparse=3 tstop=100 uic=1 acntrl=3 saman=0 ireltol=0.01m vreltol=0.01m
+
+Dcx    dc nettype=1 sparse=3 time=0 print=yes fixsm=yes load="overload_dyn.dc"
+
+Sweep control begin
+        k = 0;
+	SWEEP_LAMBDA sweep start=START_LAMBDA step=STEP_LAMBDA  stop=END_LAMBDA  param="LAMBDA" begin
+
+                k = k + 1;
+
+	Dc1    dc nettype=1 sparse=3 restart=no time=0 print=yes //iabstol=1u fixsm=yes
+        Pz     pz nettype=1 pf=1 shift=8.030027e-01 //annotate=0
+
+	Eig = get("Pz.poles");
+
+	POLES(:,k) = Eig;
+	OVERLOAD(k)  = LAMBDA;
+
+       end
+
+
+#ifdef SAVE
+
+#ifdef LFP
+#ifdef CCCV
+save("mat5","OVERLOAD_DYN_LFP_CCCV_SYNTH_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#else
+save("mat5","OVERLOAD_DYN_LFP_CPCV_SYNTH_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#endif
+#endif
+
+#ifdef LMO
+#ifdef CCCV
+save("mat5","OVERLOAD_DYN_LMO_CCCV_SYNTH_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#else
+save("mat5","OVERLOAD_DYN_LMO_CPCV_SYNTH_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#endif
+#endif
+
+#ifdef NCA
+#ifdef CCCV
+save("mat5","OVERLOAD_DYN_NCA_CCCV_SYNTH_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#else
+save("mat5","OVERLOAD_DYN_NCA_CPCV_SYNTH_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#endif
+#endif
+
+#ifdef NMC
+#ifdef CCCV
+save("mat5","OVERLOAD_DYN_NMC_CCCV_SYNTH_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#else
+save("mat5","OVERLOAD_DYN_NMC_CPCV_SYNTH_KI_1000.mat","LAMBDA",OVERLOAD,"POLES",POLES);
+#endif
+#endif
+
+#endif
+endcontrol 
+
+#endif
+
+// ----------------------------------------------- //
+// WHAT TO DO IN CASE OF CASE_EV_SYNTH ENDS HERE   //
+// ----------------------------------------------- //
+
