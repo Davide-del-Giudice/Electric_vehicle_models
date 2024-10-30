@@ -1,0 +1,41 @@
+Clear
+Set DefaultBaseFrequency=60
+
+New Circuit.EPRIK1  pu=1.00 bus1=Trans_equiv_int basekv=69  r1=0.00000001 x1=0.00000001 r0=0.00000001 x0=0.00000001
+New Linecode.EXT_PNO_BAL          nphases=3 r1=0.806263 x1=7.813791 r0=0.916307  x0=14.55679  c1=0 c0=0 units=m
+New Line.EXT                         bus1=Trans_equiv_int bus2=Trans_equiv_ext length=1 units=m linecode=EXT_PNO_BAL phases=3 enabled=True
+
+New Transformer.T2 phases=3 windings=2 buses=(Trans_equiv_ext.1.2.3, K21.1.2.3) conns=(wye,wye) kvs=(69, 13.8) kvas=(12000, 12000)
+~ xhl=7.904196143 wdg=1 %loadloss=0.50 %noloadloss=0.000001 ppm_antifloat=0.0000001
+
+Redirect triplexlinecodes.dss
+Redirect LineCodes.dss
+
+Redirect Lines.dss
+Redirect xfmrs.dss
+Redirect services.dss
+Redirect loadshapes.dss
+
+!Redirect loads.dss
+!Redirect loads_constP.txt
+Redirect loads_constZ.txt
+
+!Redirect xfmrs_EV.dss
+!Redirect loads_EV.txt
+
+!Set voltagebases = [69.0, 13.8, .4156922]
+!Calcv
+!Redirect vbases.dss
+
+
+Set maxiter=200
+Set maxcontroliter=60
+Set Algorithm = Newton
+Set Tolerance = 0.0000001
+
+redirect AllocationFactors.Txt
+solve mode=snap
+
+!Buscoords Buscoords.dss
+
+

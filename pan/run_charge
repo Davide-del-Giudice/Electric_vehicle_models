@@ -1,0 +1,22 @@
+#/usr/bin/csh
+
+pan charge_comparison.pan -ad SAVE -ad CPCV -ad LFP -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad CCCV -ad LFP -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad CCCV -ad LMO -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad CPCV -ad NMC -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad CCCV -ad NMC -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad CPCV -ad NCA -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad CCCV -ad NCA -q -w run1&
+
+
+pan charge_comparison.pan -ad SAVE -ad SYNTHETIC -ad CPCV -ad LFP -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad SYNTHETIC -ad CCCV -ad LFP -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad SYNTHETIC -ad CCCV -ad LMO -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad SYNTHETIC -ad CPCV -ad NMC -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad SYNTHETIC -ad CCCV -ad NMC -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad SYNTHETIC -ad CPCV -ad NCA -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad SYNTHETIC -ad CCCV -ad NCA -q -w run1&
+
+pan charge_comparison.pan -ad SAVE -ad CPCV -ad LMO -ad TWO_DISTURBANCES -p KP_V_DC 0.4 -p KI_V_DC 5 -q -w run1&
+pan charge_comparison.pan -ad SAVE -ad SYNTHETIC -ad CPCV -ad LMO -ad TWO_DISTURBANCES  -p KP_V_DC 0.4 -p KI_V_DC 5 -q -w run1&
+

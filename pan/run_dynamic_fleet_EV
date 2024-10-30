@@ -1,0 +1,10 @@
+#/usr/bin/csh
+
+pan ieee14.pan -ad SAVE -ad PQ -q -w run1&
+pan ieee14.pan -ad SAVE -ad SYNTHETIC -ad CASE1 -ad CPCV -ad LFP -q -w run1&
+pan ieee14.pan -ad SAVE -ad FULL      -ad CASE1 -ad CPCV -ad LFP -q -w run1&
+pan ieee14.pan -ad SAVE -ad SYNTHETIC -ad CASE2 -ad CPCV -ad LFP -q -w run1&
+pan ieee14.pan -ad SAVE -ad FULL      -ad CASE2 -ad CPCV -ad LFP -q -w run1&
+pan ieee14.pan -ad SAVE -ad SYNTHETIC -ad CASE3 -ad CPCV -ad LFP -q -w run1&
+pan ieee14.pan -ad SAVE -ad FULL      -ad CASE3 -ad CPCV -ad LFP -q -w run1&
+

@@ -1,0 +1,83 @@
+### SPICE Explorer log file, revision a2008.03 (build 0803) ###
+### created at 21:15:30 on Wed Sep 25 2024 (Linux) ###
+# (0) running in waveview only mode
+# (0) HOME defined
+# (0) #X: auto-repeat defaulted to on
+# (0) #X: running on truecolor display ...
+# (0) #X: TBAR LOADWDF
+sx_open_sim_file_read "/home/davide/EV_new/charge_comparison.raw/Tr_full"
+sx_open_sim_file_read "/home/davide/EV_new/charge_comparison.raw/Tr_synth"
+# (0) #X: TBAR UPDATEWDF
+sx_log "disp_sig 1 A P=null file=0 S='EV1.' W='EV1.p_EV'' "
+sx_log "disp_sig 1 A P=0 file=1 S='EV1.' W='EV1.p_EV'' "
+sx_log "move_sig 1 I P=0 "
+sx_log "disp_sig 1 A P=0 file=0 S='EV1.' W='EV1.soc'' "
+sx_log "disp_sig 1 A P=2 file=1 S='EV1.' W='EV1.soc'' "
+sx_log "move_sig 1 I P=2 "
+sx_log "disp_sig 1 A P=2 file=1 S='EV1.' W='EV1.d_soc'' "
+sx_log "disp_sig 1 A P=4 file=1 S='EV1.' W='EV1.d_soc'' "
+sx_log "disp_sig 1 A P=5 file=1 S='EV1.' W='EV1.d_soc'' "
+sx_log "move_sig 1 I P=4 "
+# (0) #X: TBAR ARITH
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+sx_log "move_sig 1 A P=7 "
+sx_log "move_sig 1 I P=8 "
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR UPDATEWDF
+# (0) #X: TBAR ARITH
+# (0) multiple signals: the first signal is used
+sx_log "sx_cal 1 \"'1|EV1.p_EV'/50k\""
+# (0) #X: TBAR ARITH
+sx_log "sx_cal 1 \"'0|EV1.p_EV'/50k\""
+sx_log "move_sig 1 I P=9 "

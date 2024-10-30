@@ -1,0 +1,421 @@
+module EV_SYNTH(bus1d,bus1q,tap);
+
+input  bus1d, bus1q, tap;
+
+electrical bus1d, bus2d, bus1q, bus2q, tap;
+electrical p_EV, q_EV;
+electrical CC_mode,    CP_mode,   CV_mode;
+electrical soc, d_soc, status;
+electrical d_vr, d1_vr, d_vi, d1_vi;
+electrical d_pr, d1_pr, d_pi, d1_pi;
+electrical d_qr, d_qi;
+electrical vdhat, vqhat;
+//electrical d_qr, d1_qr, d_qi, d1_qi;
+		    
+
+// ------------------------------------------------------------ //
+// PARAMETERS OF THE STATIC LOAD MODEL 				//
+// ------------------------------------------------------------	//
+
+parameter real    V_AC_1        = 800     	alterable;
+parameter real    V_AC_2        = 400     	alterable;
+parameter real    P_EV_NOM      = 50k     	alterable;
+parameter real    MIN_TAP       = 0.5	  	alterable;
+parameter real    MAX_TAP       = 1.5           alterable;
+parameter real    CPCV          = 1             alterable;
+parameter real    SOC_0     	= 0.1           alterable;
+parameter real 	  SOC_THRESHOLD = 0.9830 	alterable;
+
+//                    POWER-RELATED PARAMETERS                 //
+parameter real 	  aCP 		= 1 		alterable;
+parameter real 	  aCC 		= 0.9960 	alterable;
+parameter real 	  bCC 		= 0.0094 	alterable;
+parameter real 	  cCC 		= 0.0219 	alterable;
+parameter real    dCC 		= 74.2472 	alterable;
+parameter real    aCV 		= 0.5554 	alterable;
+parameter real    bCV 		= 0.5554 	alterable;
+parameter real    cCV 		= 1.4125 	alterable;
+parameter real    dCV 		= 74.2472 	alterable;
+parameter real    R_EV 		= 0.01 	        alterable;
+
+//                     SOC-RELATED PARAMETERS                 //
+parameter real 	  alphaCC   	= 0.16518m 	alterable;
+parameter real    alphaCV   	= 0.16640m 	alterable;
+parameter real    alphaCP   	= 6.0213k 	alterable;
+parameter real    betaCP    	= 659.7644 	alterable;
+parameter real    deltaCP   	= 183.5730 	alterable;
+parameter real    gammaCP   	= 74.2470 	alterable;
+
+
+// ------------------------------------------------------------ //
+// PARAMETERS OF THE DYNAMIC LOAD MODEL				//
+// ------------------------------------------------------------ //
+
+parameter real    V_DC_NOM      = 800   	alterable;
+parameter real    KP_V_DC       = 0.6	 	alterable;
+parameter real    KI_V_DC       = 1	 	alterable;
+parameter real    C_ACDC        = 1m*25   	alterable;
+parameter real    OMEGA_F       = 0.1     	alterable;
+
+
+// GENERIC VARIABLES
+real            N_RATIO;
+real            V_NOM;
+real            V_MIN;
+real            V_MAX;
+real            P_CONV;
+real            P_CONV_CC;
+real            P_CONV_CP;
+real            P_CONV_CV;
+real            D_SOC_CC;
+real            D_SOC_CP;
+real            D_SOC_CV;
+real            P_PU;
+real            P_REF;
+real            Q_CONV;
+real            Q_PU;
+real            Q_REF;
+real            V_EV_PU;
+real            CCCV;
+real            vd_PU_PF;
+real            theta_PLL_PF;
+real            n1r,n2r,n3r,d1r,d2r,d3r;
+real            n1i,n2i,n3i,d1i,d2i,d3i;
+
+analog begin
+
+	N_RATIO = V_AC_1/V_AC_2;
+        V_NOM  	= V_AC_2;
+	V_MIN 	= V_NOM*MIN_TAP/sqrt(2);
+	V_MAX 	= V_NOM*MAX_TAP/sqrt(2);
+	CCCV 	= 1-CPCV;
+
+	if( analysis("dcinit") ) begin
+	    {
+		    v(bus1d) <+ 0.9*V_AC_1;
+		    v(bus1q) <+ 0.1*V_AC_1;
+
+	    }
+	end else if( analysis("dc") ) begin
+	{ 
+		    // ---------------------------------------------------------------------------------- //
+		    // --------------------------       INITIALIZATION       ---------------------------- //
+		    // ---------------------------------------------------------------------------------- //
+
+		    // ------------------------       AC INTERFACE        ---------------------------- //
+
+		    // D-AXIS
+		    v(bus2d)               <+   v(bus1d)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+		    i(bus1d)               <+  -i(bus2d)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+
+		    // Q-AXIS
+		    v(bus2q)               <+   v(bus1q)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+		    i(bus1q)               <+  -i(bus2q)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+
+
+	
+          	    // ABSOLUTE FILTERED VALUE OF EV VOLTAGE
+                    vd_PU_PF            = sqrt(3)*max(min(sqrt(
+                                               pow(v(bus2d),2) +
+                                               pow(v(bus2q),2))/V_NOM,MAX_TAP),MIN_TAP);
+
+        	    // ABSOLUTE UNFILTERED VALUE OF EV VOLTAGE
+                    V_EV_PU             = max(min(sqrt(
+                                               pow(v(bus2d),2) +
+                                               pow(v(bus2q),2))/V_NOM,MAX_TAP),MIN_TAP);
+
+		    if(CPCV == 1)  					    // CPCV  
+			      {v(CC_mode) <+ 0;
+				if(v(soc) < SOC_THRESHOLD && v(CV_mode) == 0)
+				       {v(CP_mode) <+ 1;
+					v(CV_mode) <+ 0;}
+				else
+				       {v(CP_mode) <+ 0;
+					v(CV_mode) <+ 1;}
+			       }
+			    else          				   // CCCV
+			       {v(CP_mode) <+ 0;
+				if((v(soc) < SOC_THRESHOLD) && v(CV_mode) == 0)
+				       {v(CC_mode) <+ 1;
+					v(CV_mode) <+ 0;}
+				else
+				       {v(CC_mode) <+ 0;
+					v(CV_mode) <+ 1;}
+			       }
+
+
+		    // ACTIVE POWER COMPUTATION
+	            P_CONV_CC = aCC - bCC*(1-v(soc))/max(1m,v(soc))     + 
+					   cCC*exp(-dCC*(1-v(soc)));
+
+		    P_CONV_CP = aCP;
+		    P_CONV_CV = aCV + bCV*(1-v(soc))/max(1m,v(soc))     - 
+					      cCV*exp(-dCV*(1-v(soc)));
+
+	            if (CCCV == 1) 					  // CCCV
+			    {if (v(soc) <= SOC_THRESHOLD)		  // CC
+				    {P_CONV = P_CONV_CC;}
+			     else					  // CV
+			     	{if (P_CONV_CC < P_CONV_CV) 
+				    {P_CONV = P_CONV_CC;}
+				  else
+				    {P_CONV = P_CONV_CV;}
+		            	}
+			    }
+		    else						  // CPCV
+			    {if (v(soc) <= SOC_THRESHOLD)		  // CP
+				    {P_CONV = P_CONV_CP;}
+			     else					  // CV
+			     	{if (P_CONV_CP < P_CONV_CV) 
+				    {P_CONV = P_CONV_CP;}
+				  else
+				    {P_CONV = P_CONV_CV;}
+		            	}
+			    }
+	                    
+				    
+		    P_PU   = P_CONV + R_EV*pow(P_CONV/(vd_PU_PF/sqrt(3)),2);
+
+		    
+		    // REACTIVE POWER COMPUTATION (always null for now)
+		    Q_CONV 	= 0;
+		    Q_PU 	= 0;
+		    
+		    // DIRECT AND QUADRATURE CURRENT COMPUTATION
+		    P_REF      = P_PU*P_EV_NOM;
+		    Q_REF      = Q_PU*P_EV_NOM;
+		    
+		    i(bus2d) <+ (v(bus2d)*P_REF + v(bus2q)*Q_REF)/(pow(V_EV_PU*V_NOM,2));
+		    i(bus2q) <+ (v(bus2q)*P_REF - v(bus2d)*Q_REF)/(pow(V_EV_PU*V_NOM,2));
+
+
+		    v(p_EV)  <+ -(v(bus2d)*i(bus2d) + v(bus2q)*i(bus2q));
+		    v(q_EV)  <+ -(v(bus2q)*i(bus2d) - v(bus2d)*i(bus2q));
+
+		    // ASSIGN STATUS TO EV  [STATUS (0: CC, 1:CV, 2:CP)]
+		    if(v(CC_mode) == 1)
+			    {v(status) <+ 0;}
+		    else
+		    {
+			     if(v(CV_mode) == 1)
+				    {v(status) <+ 1;}
+			    else
+				    {v(status) <+ 2;}
+		    }
+
+
+		    
+		    // DELTA_SOC COMPUTATION (UPDATE IS CARRIED OUT AT NEXT STEP)
+		    D_SOC_CC = alphaCC;
+		    D_SOC_CP =  pow(max(1n,alphaCP - 
+			        betaCP*(1-v(soc))/max(1m,v(soc)) + 
+			        deltaCP*(exp(-gammaCP*(1-v(soc))))),-1);
+
+	            D_SOC_CV =  P_CONV_CV*alphaCV;
+  
+  		if (CCCV == 1) 						  // CCCV
+			    {if (v(soc) <= SOC_THRESHOLD)	 	  // CC
+				    {v(d_soc) <+ D_SOC_CC;}
+			     else					  // CV
+			     	{if (D_SOC_CC < D_SOC_CV)
+				    {v(d_soc) <+ D_SOC_CC;}
+				  else
+				    {v(d_soc) <+ D_SOC_CV;}
+		            	}
+			    }
+		    else						  // CPCV
+			    {if (v(soc) <= SOC_THRESHOLD)		  // CP
+				    {v(d_soc) <+ D_SOC_CP;}
+			     else					  // CV
+			     	{if (D_SOC_CP < D_SOC_CV) 
+				    {v(d_soc) <+ D_SOC_CP;}
+				  else
+				    {v(d_soc) <+ D_SOC_CV;}
+		            	}
+			    }
+
+		   // RETRIEVE VALUES AT POWER FLOW TO BE USED IN DYNAMIC MODEL FOR LINEARIZATION
+		    v(d_vr)   <+ 0;
+		    v(d1_vr)  <+ 0;
+		    v(d_pr)   <+ 0;
+		    v(d1_pr)  <+ 0;
+		    v(d_vi)   <+ 0;
+		    v(d1_vi)  <+ 0;
+		    v(d_pi)   <+ 0;
+		    v(d1_pi)  <+ 0;
+		    v(vdhat)  <+ v(bus2d);
+		    v(vqhat)  <+ v(bus2q);
+
+
+
+	}
+	end else
+	{
+	
+		    // ---------------------------------------------------------------------------------- //
+		    // ------------------------       TRANSIENT SIMULATION      ------------------------- //
+		    // ---------------------------------------------------------------------------------- //
+		    
+		    // ------------------------       AC INTERFACE        ---------------------------- //
+
+		    // D-AXIS
+		    v(bus2d)               <+   v(bus1d)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+		    i(bus1d)               <+  -i(bus2d)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+
+		    // Q-AXIS
+		    v(bus2q)               <+   v(bus1q)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+		    i(bus1q)               <+  -i(bus2q)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+
+
+		   // VOLTAGE DEVIATIONS WITH RESPECT TO STEADY-STATE 
+		    i(vdhat) <+ ddt(v(vdhat), , ,0) + OMEGA_F *(v(vdhat) - v(bus2d));
+		    i(vqhat) <+ ddt(v(vqhat), , ,0) + OMEGA_F *(v(vqhat) - v(bus2q));
+	
+          	    // ABSOLUTE FILTERED VALUE OF EV VOLTAGE
+                    vd_PU_PF            = sqrt(3)*max(min(sqrt(
+                                               pow(v(vdhat),2) +
+                                               pow(v(vqhat),2))/V_NOM,MAX_TAP),MIN_TAP);
+
+        	    // ABSOLUTE UNFILTERED VALUE OF EV VOLTAGE
+                    V_EV_PU             = max(min(sqrt(
+                                               pow(v(bus2d),2) +
+                                               pow(v(bus2q),2))/V_NOM,MAX_TAP),MIN_TAP);
+
+
+		    theta_PLL_PF 	= atan2(v(vqhat),v(vdhat));
+	
+
+
+		    // ACTIVE POWER COMPUTATION
+	            P_CONV_CC = aCC - bCC*(1-v(soc))/max(1m,v(soc))     + 
+					   cCC*exp(-dCC*(1-v(soc)));
+		    P_CONV_CP = aCP;
+		    P_CONV_CV = aCV + bCV*(1-v(soc))/max(1m,v(soc))     - 
+					      cCV*exp(-dCV*(1-v(soc)));
+
+	            if (CCCV == 1) 					  // CCCV
+			    {if (v(soc) <= SOC_THRESHOLD)		  // CC
+				    {P_CONV = P_CONV_CC;}
+			     else					  // CV
+			     	{if (P_CONV_CC < P_CONV_CV) 
+				    {P_CONV = P_CONV_CC;}
+				  else
+				    {P_CONV = P_CONV_CV;}
+		            	}
+			    }
+		    else						  // CPCV
+			    {if (v(soc) <= SOC_THRESHOLD)		  // CP
+				    {P_CONV = P_CONV_CP;}
+			     else					  // CV
+			     	{if (P_CONV_CP < P_CONV_CV) 
+				    {P_CONV = P_CONV_CP;}
+				  else
+				    {P_CONV = P_CONV_CV;}
+		            	}
+			    }
+	                    
+				    
+		    P_PU   = P_CONV + R_EV*pow(P_CONV/(vd_PU_PF/sqrt(3)),2);
+		    
+
+		    // DELTA_SOC COMPUTATION (UPDATE IS CARRIED OUT AT NEXT STEP)
+		    D_SOC_CC = alphaCC;
+	            D_SOC_CP =  pow(alphaCP - 
+			        betaCP*(1-v(soc))/max(1m,v(soc)) + 
+			        deltaCP*(exp(-gammaCP*(1-v(soc)))),-1);
+	            D_SOC_CV =  P_CONV_CV*alphaCV;
+  
+
+  		    if (CCCV == 1) 					  // CCCV
+			    {if (v(soc) <= SOC_THRESHOLD)		  // CC
+				    {v(d_soc) <+ D_SOC_CC;}
+			     else					  // CV
+			     	{if (D_SOC_CC < D_SOC_CV) 
+				    {v(d_soc) <+ D_SOC_CC;}
+				  else
+				    {v(d_soc) <+ D_SOC_CV;}
+		            	}
+			    }
+		    else						  // CPCV
+			    {if (v(soc) <= SOC_THRESHOLD)		  // CP
+				    {v(d_soc) <+ D_SOC_CP;}
+			     else					  // CV
+			     	{if (D_SOC_CP < D_SOC_CV) 
+				    {v(d_soc) <+ D_SOC_CP;}
+				  else
+				    {v(d_soc) <+ D_SOC_CV;}
+		            	}
+			    }
+
+
+		    // COMPUTE PU ACTIVE POWER DEVIATION DUE TO VOLTAGE DEVIATIONS
+		    v(d_vr)  <+ v(bus2d) - v(vdhat);
+		    v(d_vi)  <+ v(bus2q) - v(vqhat);
+
+		    n1r  = C_ACDC*pow(V_DC_NOM,2)*P_PU*sqrt(3)*cos(theta_PLL_PF);
+		    n2r  = 0;
+		    n3r  = 0;
+
+		    d1r  = C_ACDC*V_NOM*pow(V_DC_NOM,2)*vd_PU_PF;
+		    d2r  = P_EV_NOM*V_NOM*KP_V_DC*pow(vd_PU_PF,2);
+		    d3r  = P_EV_NOM*V_NOM*KI_V_DC*pow(vd_PU_PF,2);
+
+		    i(d1_vr) <+ v(d1_vr) - ddt(v(d_vr), , ,0);
+		    i(d1_pr) <+ v(d1_pr) - ddt(v(d_pr), , ,0);
+
+		    i(d_pr) <+ d1r*ddt(v(d1_pr), , ,0) + d2r*v(d1_pr) + d3r*v(d_pr)
+		             - (n1r*ddt(v(d1_vr), , ,0) + n2r*v(d1_vr) + n3r*v(d_vr));
+		   
+		    n1i  = C_ACDC*pow(V_DC_NOM,2)*P_PU*sqrt(3)*sin(theta_PLL_PF);
+		    n2i  = 0;
+		    n3i  = 0;
+
+		    d1i  = C_ACDC*V_NOM*pow(V_DC_NOM,2)*vd_PU_PF;
+		    d2i  = P_EV_NOM*V_NOM*KP_V_DC*pow(vd_PU_PF,2);
+		    d3i  = P_EV_NOM*V_NOM*KI_V_DC*pow(vd_PU_PF,2);
+
+		    i(d1_vi) <+ v(d1_vi) - ddt(v(d_vi), , ,0);
+		    i(d1_pi) <+ v(d1_pi) - ddt(v(d_pi), , ,0);
+
+		    i(d_pi) <+ d1i*ddt(v(d1_pi), , ,0) + d2i*v(d1_pi) + d3i*v(d_pi)
+		             - (n1i*ddt(v(d1_vi), , ,0) + n2i*v(d1_vi) + n3i*v(d_vi));
+		   
+
+		    // COMPUTE PU REACTIVE POWER DEVIATION DUE TO VOLTAGE DEVIATIONS
+		    v(d_qr) <+ 0;
+		    v(d_qi) <+ 0;
+
+		    // COMPUTE TOTAL ACTIVE POWER DEVIATION DUE TO VOLTAGE DEVIATIONS
+		    P_REF      = P_EV_NOM*(P_PU + v(d_pr) + v(d_pi));
+		    Q_REF      = P_EV_NOM*(Q_PU + v(d_qr) + v(d_qi));
+		     
+		    i(bus2d) <+ (v(bus2d)*P_REF + v(bus2q)*Q_REF)/(pow(V_EV_PU*V_NOM,2));
+		    i(bus2q) <+ (v(bus2q)*P_REF - v(bus2d)*Q_REF)/(pow(V_EV_PU*V_NOM,2));
+
+		    v(p_EV)  <+ -(v(bus2d)*i(bus2d) + v(bus2q)*i(bus2q));
+		    v(q_EV)  <+ -(v(bus2q)*i(bus2d) - v(bus2d)*i(bus2q));
+
+		    // ASSIGN STATUS TO EV  [STATUS (0: CC, 1:CV, 2:CP)]
+		    if(v(CC_mode) == 1)
+			    {v(status) <+ 0;}
+		    else
+		    {
+			     if(v(CV_mode) == 1)
+				    {v(status) <+ 1;}
+			    else
+				    {v(status) <+ 2;}
+		    }
+
+	}
+
+
+	// SOC UPDATE    		
+	v(soc)		       <+ max(0-1u,min(1,idt(v(d_soc),SOC_0)));
+	//v(soc)		       <+ SOC_0;
+
+
+end
+
+endmodule
+
+

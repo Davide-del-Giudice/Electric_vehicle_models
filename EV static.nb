@@ -1,0 +1,857 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 13.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     32712,        849]
+NotebookOptionsPosition[     30368,        807]
+NotebookOutlinePosition[     30854,        826]
+CellTagsIndexPosition[     30811,        823]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[TextData[{
+ StyleBox["Dynamic model of an electric vehicle (EV) connected to a fast \
+charging station (FCS)", "Title"],
+ "\n\nWe would like to obtain a model that relates voltage variations at the \
+PCC of the EV + FCS (hereafter referred to as EV for brevity) to their active \
+and reactive power exchange."
+}], "Text",
+ CellChangeTimes->{{3.927771270582032*^9, 3.9277712721404285`*^9}, {
+   3.9277713429142513`*^9, 3.927771466514701*^9}, {3.927771515518495*^9, 
+   3.9277717268564014`*^9}, {3.927772077326377*^9, 3.927772124914999*^9}, {
+   3.9277840565285454`*^9, 3.9277840565452147`*^9}, {3.9282056317742233`*^9, 
+   3.9282056339023333`*^9}, {3.928376791702063*^9, 3.9283768038837695`*^9}, {
+   3.9283795099038143`*^9, 3.9283795155841775`*^9}, 3.930816698140775*^9, {
+   3.930816818217267*^9, 
+   3.9308168212859535`*^9}},ExpressionUUID->"38914b23-829d-4144-8a81-\
+65e73947adb5"],
+
+Cell["\<\
+To begin with, I define the rules through which variables defined in \
+Mathematica need to be converted into \[OpenCurlyDoubleQuote]Matlab-like\
+\[CloseCurlyDoubleQuote] language. Beware of the fact that for a proper \
+conversion, variables that are substituted by others shall not be included in \
+the list. For instance, if variable y is written as a function of x, only \
+\[OpenCurlyDoubleQuote]x\[CloseCurlyDoubleQuote] should be included, \
+otherwise the \[OpenCurlyDoubleQuote]ToMatlab\[CloseCurlyDoubleQuote] \
+function may not provide as output what you would hope for. \
+\>", "Text",
+ CellChangeTimes->{{3.9298754200222874`*^9, 
+  3.9298755308258533`*^9}},ExpressionUUID->"4f33aa8c-124b-4205-a4fb-\
+cb8c26be9361"],
+
+Cell[BoxData[{
+ RowBox[{"<<", "ToMatlab.m"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"RULES", "=", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{
+       SubscriptBox["v", "THRESHOLD"], "->", "vTHRESHOLD"}], ",", 
+      RowBox[{
+       SubscriptBox["v", 
+        SubscriptBox["AC", "NOM"]], "->", "vACNOM"}], ",", 
+      RowBox[{
+       SubscriptBox["v", 
+        SubscriptBox["DC", "NOM"]], "->", "vDCNOM"}], ",", 
+      RowBox[{
+       SubscriptBox["p", 
+        SubscriptBox["EV", "NOM"]], "->", "pEVNOM"}], ",", 
+      RowBox[{
+       SubscriptBox["v", 
+        SubscriptBox["EV", "NOM"]], "->", "vEVNOM"}], ",", 
+      RowBox[{
+       SubscriptBox["i", 
+        SubscriptBox["EV", "NOM"]], "->", "iEVNOM"}], ",", 
+      "\[IndentingNewLine]", 
+      RowBox[{
+       SubscriptBox["r", "CELL"], "->", "rCELL"}], ",", 
+      RowBox[{
+       SubscriptBox["n", 
+        SubscriptBox["CELL", "SER"]], "->", "nCELLSER"}], ",", 
+      RowBox[{
+       SubscriptBox["n", 
+        SubscriptBox["CELL", "PAR"]], "->", "nCELLPAR"}], ",", 
+      RowBox[{
+       SubscriptBox["r", 
+        SubscriptBox["ACDC", "PU"]], "->", "rACDCPU"}], ",", 
+      RowBox[{
+       SubscriptBox["v", 
+        SubscriptBox["AC", "PU"]], "->", "vACPU"}], ",", 
+      "\[IndentingNewLine]", " ", 
+      RowBox[{
+       SubscriptBox["e", "0"], "->", " ", "E0"}], ",", 
+      RowBox[{
+       SubscriptBox["SOC", "0"], "->", " ", "SOC0"}], ",", " ", 
+      RowBox[{"K", "->", "K"}], ",", " ", 
+      RowBox[{
+       SubscriptBox["q", "CELL"], "->", "qCELLNOM"}], ",", " ", 
+      RowBox[{"A", "->", "A"}], ",", " ", 
+      RowBox[{"B", "->", "B"}]}], "}"}]}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Element", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"A", ",", 
+      SubscriptBox["SOC", "0"], ",", "B", ",", "K", ",", 
+      SubscriptBox["e", "0"], ",", " ", 
+      SubscriptBox["q", "CELL"], ",", 
+      SubscriptBox["r", "CELL"], ",", 
+      SubscriptBox["n", 
+       SubscriptBox["CELL", "SER"]], ",", 
+      SubscriptBox["n", 
+       SubscriptBox["CELL", "PAR"]], ",", "iEVNOM", ",", "pEVNOM", ",", 
+      SubscriptBox["v", "THRESHOLD"]}], "}"}], ",", "Positive"}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Element", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"A", ",", 
+      SubscriptBox["SOC", "0"], ",", "B", ",", "K", ",", 
+      SubscriptBox["e", "0"], ",", " ", 
+      SubscriptBox["q", "CELL"], ",", 
+      SubscriptBox["r", "CELL"], ",", 
+      SubscriptBox["n", 
+       SubscriptBox["CELL", "SER"]], ",", 
+      SubscriptBox["n", 
+       SubscriptBox["CELL", "PAR"]], ",", "iEVNOM", ",", "pEVNOM", ",", 
+      SubscriptBox["v", "THRESHOLD"]}], "}"}], ",", "Reals"}], "]"}], 
+  ";"}], "\[IndentingNewLine]"}], "Input",
+ CellChangeTimes->{{3.928380446387816*^9, 3.9283804811137114`*^9}, {
+   3.928380523793326*^9, 3.9283806947910542`*^9}, {3.9283807272511272`*^9, 
+   3.928380811992759*^9}, {3.9283818402914352`*^9, 3.928381952726076*^9}, {
+   3.929608945087093*^9, 3.929608976616961*^9}, {3.9296105124568663`*^9, 
+   3.929610514786153*^9}, {3.9296914287264843`*^9, 3.9296914344456487`*^9}, {
+   3.9296914963378506`*^9, 3.929691499428398*^9}, 3.9296932134114695`*^9, {
+   3.9296934347465754`*^9, 3.9296934562167325`*^9}, {3.9296937483069334`*^9, 
+   3.9296937748566594`*^9}, 3.9296971692642574`*^9, {3.9296972524266815`*^9, 
+   3.929697253945634*^9}, {3.9296973139496393`*^9, 3.9296973159538665`*^9}, {
+   3.9298755881016674`*^9, 3.929875611365952*^9}, {3.9298757980302196`*^9, 
+   3.9298758187147684`*^9}, {3.9298760423602495`*^9, 
+   3.9298760434650145`*^9}, {3.9298761561864953`*^9, 
+   3.9298761576730995`*^9}, {3.9300284534609675`*^9, 
+   3.9300284949771543`*^9}, {3.930028556805768*^9, 3.930028575681308*^9}, {
+   3.9301518333629627`*^9, 3.930151907118353*^9}, {3.9301519871504745`*^9, 
+   3.9301520026220827`*^9}, {3.930153176343038*^9, 3.9301532066815786`*^9}, {
+   3.93015324800482*^9, 3.930153249118166*^9}, {3.930153315902347*^9, 
+   3.9301533180953364`*^9}, {3.9301534195879292`*^9, 3.930153465611952*^9}, {
+   3.9301535374142313`*^9, 3.930153595056529*^9}, {3.9308019450921507`*^9, 
+   3.9308020814515676`*^9}, {3.9308026843995547`*^9, 3.930802747072158*^9}, {
+   3.9308031621110992`*^9, 3.930803167802711*^9}, {3.930803201784685*^9, 
+   3.9308033577017508`*^9}, {3.93081430610614*^9, 3.9308143134045377`*^9}, {
+   3.9308148763964777`*^9, 3.9308148772357564`*^9}, 3.9308167697595263`*^9},
+ CellLabel->"In[1]:=",ExpressionUUID->"e9b21d9d-fb74-4d5b-bcc6-aa6309fef492"],
+
+Cell["Generic expressions", "Text",
+ CellChangeTimes->{{3.9308001108945284`*^9, 
+  3.9308001148446827`*^9}},ExpressionUUID->"9a8c0b66-025c-4706-9908-\
+7a1d72798239"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   SubscriptBox["v", "OCV"], " ", "=", " ", 
+   RowBox[{
+    SubscriptBox["e", "0"], "-", 
+    RowBox[{"K", 
+     RowBox[{"(", 
+      RowBox[{"1", "-", 
+       SubscriptBox["SOC", "0"]}], ")"}], 
+     RowBox[{
+      SubscriptBox["q", "CELL"], "/", 
+      SubscriptBox["SOC", "0"]}]}], " ", "+", " ", 
+    RowBox[{"A", " ", 
+     RowBox[{"Exp", "[", 
+      RowBox[{
+       RowBox[{"-", 
+        RowBox[{"(", 
+         RowBox[{"1", "-", 
+          SubscriptBox["SOC", "0"]}], ")"}]}], "B", " ", 
+       SubscriptBox["q", "CELL"]}], "]"}]}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["r", "BATT"], " ", "=", " ", 
+   RowBox[{
+    SubscriptBox["r", "CELL"], 
+    RowBox[{
+     SubscriptBox["n", 
+      SubscriptBox["CELL", "SER"]], "/", 
+     SubscriptBox["n", 
+      SubscriptBox["CELL", "PAR"]]}]}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.930028052776018*^9, 3.9300281676860247`*^9}, {
+   3.9300282331181164`*^9, 3.9300283870668516`*^9}, {3.930028552939048*^9, 
+   3.9300285666925154`*^9}, {3.9300286029755096`*^9, 
+   3.9300286544395046`*^9}, {3.9300286850133*^9, 3.93002871001245*^9}, {
+   3.9300287692279015`*^9, 3.9300287696154585`*^9}, {3.9300289863578053`*^9, 
+   3.9300289871425495`*^9}, {3.93007067200586*^9, 3.9300706731329975`*^9}, {
+   3.930151600851303*^9, 3.9301516061717644`*^9}, 3.930151718529256*^9, {
+   3.930151912017481*^9, 3.930151912653016*^9}, {3.9301520439887047`*^9, 
+   3.9301520819080105`*^9}, {3.930153307352771*^9, 3.930153307901781*^9}, {
+   3.9301534081502852`*^9, 3.9301534083389387`*^9}, {3.930153501828261*^9, 
+   3.930153525595107*^9}, {3.930154076803544*^9, 3.9301540772906694`*^9}, {
+   3.930154183832309*^9, 3.9301541908208065`*^9}, {3.930154264299018*^9, 
+   3.93015427835058*^9}, {3.930161208436711*^9, 3.930161216260907*^9}, {
+   3.930800041761282*^9, 3.9308000428279877`*^9}, 3.9308137108769817`*^9, {
+   3.9308139915891266`*^9, 3.9308140037777605`*^9}, {3.9308155016670756`*^9, 
+   3.9308155066849847`*^9}, {3.9308156065180883`*^9, 3.930815609867407*^9}, {
+   3.9308166580561233`*^9, 3.9308166625823927`*^9}},
+ CellLabel->"In[5]:=",ExpressionUUID->"ce696cc9-0a5b-4df6-8b78-88881c8fbe4d"],
+
+Cell["\<\
+Constant current (CC) charging. Find:\[LineSeparator]1) Expression of power \
+at AC-side as a function of initial SOC0.
+2) Expression of SOC update as a function of initial SOC0.
+3) Expression of SOC threshold such that EV shifts from CC to CV charging.\
+\>", "Text",
+ CellChangeTimes->{{3.930800124710925*^9, 3.93080021223485*^9}, {
+  3.9308005814229183`*^9, 3.9308005930407977`*^9}, {3.930803403568347*^9, 
+  3.930803403910242*^9}},ExpressionUUID->"a0a6c597-6fc0-4310-9e95-\
+50e197e41255"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   SubscriptBox["i", 
+    SubscriptBox["BATT", "CC"]], " ", "=", " ", "iEVNOM"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["i", 
+    SubscriptBox["CELL", "CC"]], "  ", "=", " ", 
+   RowBox[{
+    SubscriptBox["i", 
+     SubscriptBox["BATT", "CC"]], "/", 
+    SubscriptBox["n", 
+     SubscriptBox["CELL", "PAR"]]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["v", 
+    SubscriptBox["BATT", "CC"]], "=", " ", 
+   RowBox[{
+    SubscriptBox["n", 
+     SubscriptBox["CELL", "SER"]], 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{
+       SubscriptBox["r", "CELL"], 
+       SubscriptBox["i", 
+        SubscriptBox["CELL", "CC"]]}], "+", 
+      SubscriptBox["v", "OCV"]}], ")"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  SubscriptBox["p", 
+   SubscriptBox["BATT", "CC"]], " ", "=", " ", 
+  RowBox[{
+   SubscriptBox["v", 
+    SubscriptBox["BATT", "CC"]], 
+   SubscriptBox["i", 
+    SubscriptBox["BATT", "CC"]]}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["dSOC", "CC"], " ", "=", " ", 
+   RowBox[{
+    SubscriptBox["i", 
+     SubscriptBox["CELL", "CC"]], "/", 
+    RowBox[{"(", 
+     RowBox[{"3600", " ", 
+      SubscriptBox["q", "CELL"]}], ")"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["Eq1", "CC"], " ", "=", " ", 
+   RowBox[{
+    SubscriptBox["v", 
+     SubscriptBox["BATT", "CC"]], "-", 
+    RowBox[{
+     SubscriptBox["v", "THRESHOLD"], 
+     SubscriptBox["n", 
+      SubscriptBox["CELL", "SER"]]}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Sols", "=", 
+   RowBox[{
+    RowBox[{"Simplify", "[", 
+     RowBox[{"First", "[", 
+      RowBox[{"Solve", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          SubscriptBox["Eq1", "CC"], "==", "0"}], " ", "/.", 
+         RowBox[{"{", 
+          RowBox[{"K", "->", "0"}], "}"}]}], ",", 
+        SubscriptBox["SOC", "0"], ",", "Reals"}], "]"}], "]"}], " ", "]"}], "//",
+     " ", "First"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["SOC", 
+    SubscriptBox["THRESHOLD", "CC"]], "=", 
+   RowBox[{"Normal", "@", "Sols"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"ToMatlab", "[", 
+   RowBox[{
+    SubscriptBox["p", 
+     SubscriptBox["BATT", "CC"]], "/.", "RULES"}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"ToMatlab", "[", 
+   RowBox[{
+    SubscriptBox["dSOC", "CC"], "/.", "RULES"}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"ToMatlab", "[", 
+   RowBox[{
+    SubscriptBox["SOC", 
+     SubscriptBox["THRESHOLD", "CC"]], "/.", "RULES"}], "]"}], 
+  ";"}]}], "Input",
+ CellChangeTimes->{{3.9300288304159393`*^9, 3.930028835513199*^9}, {
+   3.9301513652046127`*^9, 3.9301513875941725`*^9}, {3.9308001482272005`*^9, 
+   3.930800154213715*^9}, {3.9308004698193684`*^9, 3.9308005773392878`*^9}, 
+   3.9308006856507063`*^9, {3.930800746276225*^9, 3.930800755613121*^9}, {
+   3.9308008329544344`*^9, 3.9308008508812237`*^9}, {3.930800890393448*^9, 
+   3.9308008956561117`*^9}, {3.9308010778191023`*^9, 3.930801100284819*^9}, {
+   3.9308011536742263`*^9, 3.930801259270669*^9}, {3.930801404484621*^9, 
+   3.9308014483473454`*^9}, {3.930801519953207*^9, 3.9308015215617943`*^9}, {
+   3.930801553729081*^9, 3.930801559922903*^9}, {3.9308016912823863`*^9, 
+   3.9308018078776474`*^9}, {3.9308019166442413`*^9, 
+   3.9308019201871705`*^9}, {3.9308020856346197`*^9, 3.930802086359228*^9}, {
+   3.9308027528243093`*^9, 3.9308027641663933`*^9}, {3.930803071758522*^9, 
+   3.930803079622571*^9}, {3.9308032142613173`*^9, 3.9308032155483055`*^9}, {
+   3.930803281289792*^9, 3.930803283064712*^9}, {3.9308033632811995`*^9, 
+   3.9308033647292843`*^9}, {3.9308135283415413`*^9, 3.930813528524022*^9}, 
+   3.930815130284644*^9, 3.9308167871636505`*^9, {3.9308180717048097`*^9, 
+   3.930818079797253*^9}, 3.9308943255263295`*^9, {3.9308944002809772`*^9, 
+   3.930894406862009*^9}},
+ CellLabel->"In[7]:=",ExpressionUUID->"aa65659c-25df-418c-8a5b-9ba8d557e782"],
+
+Cell[BoxData[
+ RowBox[{"iEVNOM", " ", 
+  SubscriptBox["n", 
+   SubscriptBox["CELL", "SER"]], " ", 
+  RowBox[{"(", 
+   RowBox[{
+    RowBox[{"A", " ", 
+     SuperscriptBox["\[ExponentialE]", 
+      RowBox[{"B", " ", 
+       SubscriptBox["q", "CELL"], " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"-", "1"}], "+", 
+         SubscriptBox["SOC", "0"]}], ")"}]}]]}], "+", 
+    SubscriptBox["e", "0"], "+", 
+    FractionBox[
+     RowBox[{"iEVNOM", " ", 
+      SubscriptBox["r", "CELL"]}], 
+     SubscriptBox["n", 
+      SubscriptBox["CELL", "PAR"]]], "-", 
+    FractionBox[
+     RowBox[{"K", " ", 
+      SubscriptBox["q", "CELL"], " ", 
+      RowBox[{"(", 
+       RowBox[{"1", "-", 
+        SubscriptBox["SOC", "0"]}], ")"}]}], 
+     SubscriptBox["SOC", "0"]]}], ")"}]}]], "Output",
+ CellChangeTimes->{{3.9308942994802475`*^9, 3.9308943264811845`*^9}, 
+   3.9308944072251077`*^9, 3.930908762446125*^9, 3.930909080642718*^9},
+ CellLabel->"Out[10]=",ExpressionUUID->"d48cb5eb-e67b-4e5c-992b-8007bbd84fe7"]
+}, Open  ]],
+
+Cell["\<\
+Constant power (CP) charging. Find:\[LineSeparator]1) Expression of power at \
+AC-side as a function of initial SOC0.
+2) Expression of SOC update as a function of initial SOC0.
+3) Expression of SOC threshold such that EV shifts from CP to CV charging.\
+\>", "Text",
+ CellChangeTimes->{{3.930800227339384*^9, 3.9308002335055785`*^9}, {
+  3.930803410518552*^9, 
+  3.930803414160251*^9}},ExpressionUUID->"b163b56d-9c36-4fab-9523-\
+8499d710a7d5"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    SubscriptBox["p", 
+     SubscriptBox["BATT", "CP"]], " ", "=", " ", "pEVNOM"}], ";"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     SubscriptBox["i", 
+      SubscriptBox["BATT", "CP"]], "  ", "=", " ", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"-", 
+          SubscriptBox["v", "OCV"]}], 
+         SubscriptBox["n", 
+          SubscriptBox["CELL", "SER"]]}], " ", "+", " ", 
+        RowBox[{"sqrt", "[", 
+         RowBox[{"4", 
+          SubscriptBox["r", "BATT"], "pEVNOM"}], "]"}]}], ")"}], "/", 
+      RowBox[{"(", 
+       RowBox[{"2", 
+        SubscriptBox["r", "BATT"]}], ")"}]}]}], ";"}], 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["i", 
+    SubscriptBox["BATT", "CP"]], "  ", "=", " ", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"-", 
+        SubscriptBox["v", "OCV"]}], 
+       SubscriptBox["n", 
+        SubscriptBox["CELL", "SER"]]}], " ", "+", " ", 
+      RowBox[{"sqrt", "[", 
+       RowBox[{
+        RowBox[{
+         SubsuperscriptBox["v", "OCV", "2"], 
+         SubsuperscriptBox["n", 
+          SubscriptBox["CELL", "SER"], "2"]}], "+", 
+        RowBox[{"4", 
+         SubscriptBox["r", "BATT"], "pEVNOM"}]}], "]"}]}], ")"}], "/", 
+    RowBox[{"(", 
+     RowBox[{"2", 
+      SubscriptBox["r", "BATT"]}], ")"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["i", 
+    SubscriptBox["CELL", "CP"]], "  ", "=", " ", 
+   RowBox[{
+    SubscriptBox["i", 
+     SubscriptBox["BATT", "CP"]], "/", 
+    SubscriptBox["n", 
+     SubscriptBox["CELL", "PAR"]]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["i", 
+    SubscriptBox["BATT", 
+     RowBox[{"CP", ",", "SIMPL"}]]], "=", 
+   RowBox[{"pEVNOM", "/", 
+    RowBox[{"(", 
+     RowBox[{
+      SubscriptBox["v", "OCV"], 
+      SubscriptBox["n", 
+       SubscriptBox["CELL", "SER"]]}], ")"}]}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["i", 
+    SubscriptBox["CELL", 
+     RowBox[{"CP", ",", "SIMPL"}]]], "  ", "=", " ", 
+   RowBox[{
+    SubscriptBox["i", 
+     SubscriptBox["BATT", 
+      RowBox[{"CP", ",", "SIMPL"}]]], "/", 
+    SubscriptBox["n", 
+     SubscriptBox["CELL", "PAR"]]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["v", 
+    SubscriptBox["BATT", "CP"]], "   ", "=", " ", 
+   RowBox[{
+    SubscriptBox["n", 
+     SubscriptBox["CELL", "SER"]], 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{
+       SubscriptBox["r", "CELL"], 
+       SubscriptBox["i", 
+        SubscriptBox["CELL", "CP"]]}], "+", 
+      SubscriptBox["v", "OCV"]}], ")"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SubscriptBox["v", 
+    SubscriptBox["BATT", 
+     RowBox[{"CP", ",", "SIMPL"}]]], "   ", "=", " ", 
+   RowBox[{
+    SubscriptBox["n", 
+     SubscriptBox["CELL", "SER"]], 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{
+       SubscriptBox["r", "CELL"], 
+       SubscriptBox["i", 
+        SubscriptBox["CELL", 
+         RowBox[{"CP", ",", "SIMPL"}]]]}], "+", 
+      SubscriptBox["v", "OCV"]}], ")"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  SubscriptBox["dSOC", 
+   RowBox[{"CP", ",", "SIMPL"}]], " ", "=", " ", 
+  RowBox[{
+   SubscriptBox["i", 
+    SubscriptBox["CELL", 
+     RowBox[{"CP", ",", "SIMPL"}]]], "/", 
+   RowBox[{"(", 
+    RowBox[{"3600", " ", 
+     SubscriptBox["q", "CELL"]}], ")"}]}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    SubscriptBox["Eq1", "CP"], " ", "=", " ", 
+    RowBox[{"Simplify", "[", 
+     RowBox[{
+      SubscriptBox["v", 
+       SubscriptBox["BATT", "CP"]], "-", 
+      RowBox[{
+       SubscriptBox["v", "THRESHOLD"], 
+       SubscriptBox["n", 
+        SubscriptBox["CELL", "SER"]]}]}], "]"}]}], ";"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     SubscriptBox["Eq1", 
+      RowBox[{"CP", ",", "SIMPL"}]], " ", "=", " ", 
+     RowBox[{"Simplify", "[", 
+      RowBox[{
+       SubscriptBox["v", 
+        SubscriptBox["BATT", 
+         RowBox[{"CP", ",", "SIMPL"}]]], "-", 
+       RowBox[{
+        SubscriptBox["v", "THRESHOLD"], 
+        SubscriptBox["n", 
+         SubscriptBox["CELL", "SER"]]}]}], "]"}]}], ";", 
+    "\[IndentingNewLine]", 
+    RowBox[{"Sols", "=", 
+     RowBox[{
+      RowBox[{"First", "[", 
+       RowBox[{"Solve", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           SubscriptBox["Eq1", 
+            RowBox[{"CP", ",", "SIMPL"}]], "==", "0"}], " ", "/.", 
+          RowBox[{"{", 
+           RowBox[{"K", "->", "0"}], "}"}]}], ",", 
+         SubscriptBox["SOC", "0"]}], "]"}], "]"}], " ", "//", " ", 
+      "First"}]}], ";", "\[IndentingNewLine]", 
+    RowBox[{
+     SubscriptBox["SOC", 
+      SubscriptBox["THRESHOLD", "CP"]], "=", 
+     RowBox[{
+      RowBox[{"Normal", "@", "Sols"}], "/.", 
+      RowBox[{"{", 
+       RowBox[{
+        TemplateBox[{"1"},
+         "C"], "->", "0"}], "}"}]}]}], ";"}], "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{"ToMatlab", "[", 
+  RowBox[{
+   SubscriptBox["Eq1", "CP"], "/.", "RULES"}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"ToMatlab", "[", 
+  RowBox[{
+   SubscriptBox["p", 
+    SubscriptBox["BATT", "CP"]], "/.", "RULES"}], 
+  "]"}], "\[IndentingNewLine]", 
+ RowBox[{"ToMatlab", "[", 
+  RowBox[{
+   SubscriptBox["dSOC", 
+    RowBox[{"CP", ",", "SIMPL"}]], "/.", "RULES"}], 
+  "]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{"ToMatlab", "[", 
+    RowBox[{
+     SubscriptBox["SOC", 
+      SubscriptBox["THRESHOLD", "CP"]], "/.", "RULES"}], "]"}], 
+   "*)"}]}]}], "Input",
+ CellChangeTimes->{{3.9308134883102264`*^9, 3.9308136903276353`*^9}, {
+   3.930813895034816*^9, 3.9308139008587885`*^9}, {3.9308141764777174`*^9, 
+   3.9308142305886564`*^9}, {3.9308142650605965`*^9, 3.930814291063837*^9}, {
+   3.930814341439673*^9, 3.9308143513610325`*^9}, {3.93081439645343*^9, 
+   3.9308143979123497`*^9}, {3.930814508282222*^9, 3.93081458249078*^9}, {
+   3.9308147350632157`*^9, 3.9308148478165054`*^9}, {3.9308149286880145`*^9, 
+   3.930814948141094*^9}, {3.9308150749213295`*^9, 3.930815079975649*^9}, {
+   3.9308151505963492`*^9, 3.9308151518035493`*^9}, {3.9308151899506245`*^9, 
+   3.9308152308019457`*^9}, {3.9308152711879377`*^9, 3.930815287510807*^9}, {
+   3.9308153542690535`*^9, 3.9308154911811*^9}, {3.9308155244221644`*^9, 
+   3.9308155428770742`*^9}, {3.9308155752111254`*^9, 3.93081557571241*^9}, {
+   3.9308156524318094`*^9, 3.930815669089151*^9}, {3.930816388706067*^9, 
+   3.930816569971143*^9}, {3.930816615420265*^9, 3.9308166824842076`*^9}, {
+   3.930818054474559*^9, 3.9308180581701193`*^9}, {3.930843364537332*^9, 
+   3.93084340287469*^9}, {3.9308441468532963`*^9, 3.9308441729245296`*^9}, 
+   3.9308443288825073`*^9, {3.930844423380561*^9, 3.9308444402073717`*^9}, {
+   3.9308455131107187`*^9, 3.9308456064982953`*^9}, {3.930847034053463*^9, 
+   3.9308470854047885`*^9}, {3.9308471195673018`*^9, 3.930847345444972*^9}, {
+   3.930847386405512*^9, 3.9308473909770856`*^9}, {3.9308475863654413`*^9, 
+   3.9308476037344666`*^9}, 3.9308476388016644`*^9},
+ CellLabel->"In[18]:=",ExpressionUUID->"7927c9e8-5d9a-4f05-96bd-a1a876501829"],
+
+Cell[BoxData[
+ FractionBox["pEVNOM", 
+  RowBox[{"3600", " ", 
+   SubscriptBox["n", 
+    SubscriptBox["CELL", "PAR"]], " ", 
+   SubscriptBox["n", 
+    SubscriptBox["CELL", "SER"]], " ", 
+   SubscriptBox["q", "CELL"], " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"A", " ", 
+      SuperscriptBox["\[ExponentialE]", 
+       RowBox[{"B", " ", 
+        SubscriptBox["q", "CELL"], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"-", "1"}], "+", 
+          SubscriptBox["SOC", "0"]}], ")"}]}]]}], "+", 
+     SubscriptBox["e", "0"], "-", 
+     FractionBox[
+      RowBox[{"K", " ", 
+       SubscriptBox["q", "CELL"], " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         SubscriptBox["SOC", "0"]}], ")"}]}], 
+      SubscriptBox["SOC", "0"]]}], ")"}]}]]], "Output",
+ CellChangeTimes->{
+  3.9308456340900917`*^9, {3.930847197086118*^9, 3.93084720500574*^9}, 
+   3.930847243457692*^9, 3.93084739978148*^9, 3.930847606851914*^9, 
+   3.9308476394811068`*^9, 3.930908762858917*^9, 3.930909083252097*^9},
+ CellLabel->"Out[25]=",ExpressionUUID->"acfd3613-51bb-42dc-8072-1030f13b944d"],
+
+Cell[BoxData["\<\"(1/2).*(nCELLSER.*SOC0.^(-1).*(K.*qCELLNOM.*((-1)+SOC0)+\
+SOC0.*(A.* ...\\n  \
+exp(1).^(B.*qCELLNOM.*((-1)+SOC0))+E0+(-2).*vTHRESHOLD))+sqrt( ...\\n  \
+nCELLSER.*(4.*nCELLPAR.^(-1).*pEVNOM.*rCELL+nCELLSER.*(A.*exp(1) ...\\n  \
+.^(B.*qCELLNOM.*((-1)+SOC0))+E0+qCELLNOM.*(K+(-1).*K.*SOC0.^(-1))) ...\\n  \
+.^2)));\\n\"\>"], "Output",
+ CellChangeTimes->{
+  3.9308456340900917`*^9, {3.930847197086118*^9, 3.93084720500574*^9}, 
+   3.930847243457692*^9, 3.93084739978148*^9, 3.930847606851914*^9, 
+   3.9308476394811068`*^9, 3.930908762858917*^9, 3.930909083727374*^9},
+ CellLabel->"Out[27]=",ExpressionUUID->"0b33b56d-951c-455d-9305-1e0ce02829e8"],
+
+Cell[BoxData["\<\"pEVNOM;\\n\"\>"], "Output",
+ CellChangeTimes->{
+  3.9308456340900917`*^9, {3.930847197086118*^9, 3.93084720500574*^9}, 
+   3.930847243457692*^9, 3.93084739978148*^9, 3.930847606851914*^9, 
+   3.9308476394811068`*^9, 3.930908762858917*^9, 3.9309090837373857`*^9},
+ CellLabel->"Out[28]=",ExpressionUUID->"7dc76abf-80ba-4fc9-8a69-4b70b71306ab"],
+
+Cell[BoxData["\<\"(1/3600).*nCELLPAR.^(-1).*nCELLSER.^(-1).*pEVNOM.*qCELLNOM.^\
+(-1).* ...\\n  \
+(A.*exp(1).^(B.*qCELLNOM.*((-1)+SOC0))+E0+(-1).*K.*qCELLNOM.*(1+( ...\\n  \
+-1).*SOC0).*SOC0.^(-1)).^(-1);\\n\"\>"], "Output",
+ CellChangeTimes->{
+  3.9308456340900917`*^9, {3.930847197086118*^9, 3.93084720500574*^9}, 
+   3.930847243457692*^9, 3.93084739978148*^9, 3.930847606851914*^9, 
+   3.9308476394811068`*^9, 3.930908762858917*^9, 3.9309090837530174`*^9},
+ CellLabel->"Out[29]=",ExpressionUUID->"68fbee77-9953-463d-a2e0-d2c0ebf096e3"]
+}, Open  ]],
+
+Cell["\<\
+Constant power (CV) charging. Find:\[LineSeparator]1) Expression of power at \
+AC-side as a function of initial SOC0.
+2) Expression of SOC update as a function of initial SOC0.\
+\>", "Text",
+ CellChangeTimes->{{3.9308033963078747`*^9, 3.9308034509863243`*^9}, {
+  3.9308170981072774`*^9, 
+  3.9308170984744644`*^9}},ExpressionUUID->"01accca2-60c5-42cf-9bde-\
+dce884b0cadc"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+     SubscriptBox["v", "THRESHOLD"], " ", "=", " ", 
+     RowBox[{
+      SubscriptBox["v", "OCV"], "/.", 
+      RowBox[{"{", 
+       RowBox[{
+        SubscriptBox["SOC", "0"], "->", "1"}], "}"}]}]}], ";"}], "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{
+     SubscriptBox["i", 
+      SubscriptBox["CELL", "CV"]], "=", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        SubscriptBox["v", "THRESHOLD"], "-", 
+        SubscriptBox["v", "OCV"]}], ")"}], "/", 
+      SubscriptBox["r", "CELL"]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    SubscriptBox["p", 
+     SubscriptBox["BATT", "CV"]], "=", 
+    RowBox[{
+     SubscriptBox["v", "THRESHOLD"], " ", 
+     SubscriptBox["n", 
+      SubscriptBox["CELL", "SER"]], 
+     SubscriptBox["i", 
+      SubscriptBox["CELL", "CV"]], 
+     SubscriptBox["n", 
+      SubscriptBox["CELL", "PAR"]]}]}], "\[IndentingNewLine]", 
+   RowBox[{
+    SubscriptBox["dSOC", "CV"], " ", "=", " ", 
+    RowBox[{
+     SubscriptBox["i", 
+      SubscriptBox["CELL", "CV"]], "/", 
+     RowBox[{"(", 
+      RowBox[{"3600", " ", 
+       SubscriptBox["q", "CELL"]}], ")"}]}]}], "\[IndentingNewLine]", 
+   RowBox[{"ToMatlab", "[", 
+    RowBox[{
+     SubscriptBox["p", 
+      SubscriptBox["BATT", "CV"]], "/.", "RULES"}], "]"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"ToMatlab", "[", 
+    RowBox[{
+     SubscriptBox["dSOC", "CV"], "/.", "RULES"}], "]"}], 
+   "\[IndentingNewLine]"}]}]], "Input",
+ CellChangeTimes->{{3.930816872867466*^9, 3.9308169689171624`*^9}, {
+   3.930817020033159*^9, 3.930817066650758*^9}, {3.930817115083372*^9, 
+   3.9308172469508324`*^9}, {3.930817292793076*^9, 3.930817368959953*^9}, {
+   3.9308179123020306`*^9, 3.9308179129673653`*^9}, {3.930818045602921*^9, 
+   3.93081804963042*^9}, {3.930841256273876*^9, 3.9308413244796696`*^9}, {
+   3.930841414175474*^9, 3.9308414293798866`*^9}, {3.9308415132220836`*^9, 
+   3.9308415157287755`*^9}, {3.930841729517456*^9, 3.9308417532692795`*^9}, 
+   3.930909058208748*^9},
+ CellLabel->"In[30]:=",ExpressionUUID->"a01ee5a9-aca5-45a0-bf88-45100ddcce8b"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{
+   SubscriptBox["n", 
+    SubscriptBox["CELL", "PAR"]], " ", 
+   SubscriptBox["n", 
+    SubscriptBox["CELL", "SER"]], " ", 
+   SubscriptBox["v", "THRESHOLD"], " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "A"}], " ", 
+      SuperscriptBox["\[ExponentialE]", 
+       RowBox[{"B", " ", 
+        SubscriptBox["q", "CELL"], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"-", "1"}], "+", 
+          SubscriptBox["SOC", "0"]}], ")"}]}]]}], "-", 
+     SubscriptBox["e", "0"], "+", 
+     FractionBox[
+      RowBox[{"K", " ", 
+       SubscriptBox["q", "CELL"], " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         SubscriptBox["SOC", "0"]}], ")"}]}], 
+      SubscriptBox["SOC", "0"]], "+", 
+     SubscriptBox["v", "THRESHOLD"]}], ")"}]}], 
+  SubscriptBox["r", "CELL"]]], "Output",
+ CellChangeTimes->{{3.9309087571933236`*^9, 3.930908763213731*^9}, {
+  3.930909060182757*^9, 3.9309090838103766`*^9}},
+ CellLabel->"Out[31]=",ExpressionUUID->"48b78d89-5ab5-471e-af5e-6c71d269df4d"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{
+   RowBox[{
+    RowBox[{"-", "A"}], " ", 
+    SuperscriptBox["\[ExponentialE]", 
+     RowBox[{"B", " ", 
+      SubscriptBox["q", "CELL"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"-", "1"}], "+", 
+        SubscriptBox["SOC", "0"]}], ")"}]}]]}], "-", 
+   SubscriptBox["e", "0"], "+", 
+   FractionBox[
+    RowBox[{"K", " ", 
+     SubscriptBox["q", "CELL"], " ", 
+     RowBox[{"(", 
+      RowBox[{"1", "-", 
+       SubscriptBox["SOC", "0"]}], ")"}]}], 
+    SubscriptBox["SOC", "0"]], "+", 
+   SubscriptBox["v", "THRESHOLD"]}], 
+  RowBox[{"3600", " ", 
+   SubscriptBox["q", "CELL"], " ", 
+   SubscriptBox["r", "CELL"]}]]], "Output",
+ CellChangeTimes->{{3.9309087571933236`*^9, 3.930908763213731*^9}, {
+  3.930909060182757*^9, 3.9309090838271475`*^9}},
+ CellLabel->"Out[32]=",ExpressionUUID->"72b1944f-8351-474c-8ea1-8839d3045022"],
+
+Cell[BoxData["\<\"nCELLPAR.*nCELLSER.*rCELL.^(-1).*vTHRESHOLD.*((-1).*A.*exp(\
+1).^( ...\\n  \
+B.*qCELLNOM.*((-1)+SOC0))+(-1).*E0+K.*qCELLNOM.*(1+(-1).*SOC0).* ...\\n  \
+SOC0.^(-1)+vTHRESHOLD);\\n\"\>"], "Output",
+ CellChangeTimes->{{3.9309087571933236`*^9, 3.930908763213731*^9}, {
+  3.930909060182757*^9, 3.93090908383716*^9}},
+ CellLabel->"Out[33]=",ExpressionUUID->"08abda76-cb4e-44a7-99a7-cfd4bb555419"],
+
+Cell[BoxData["\<\"(1/3600).*qCELLNOM.^(-1).*rCELL.^(-1).*((-1).*A.*exp(1).^(B.\
+* ...\\n  qCELLNOM.*((-1)+SOC0))+(-1).*E0+K.*qCELLNOM.*(1+(-1).*SOC0).* \
+...\\n  SOC0.^(-1)+vTHRESHOLD);\\n\"\>"], "Output",
+ CellChangeTimes->{{3.9309087571933236`*^9, 3.930908763213731*^9}, {
+  3.930909060182757*^9, 3.9309090838527875`*^9}},
+ CellLabel->"Out[34]=",ExpressionUUID->"bb2c6d4c-8ae8-41ad-b6ee-9f2a0f0e6662"]
+}, Open  ]]
+},
+WindowSize->{718.5, 741.},
+WindowMargins->{{-5.25, Automatic}, {Automatic, 0}},
+DockedCells->{},
+TaggingRules-><|"TryRealOnly" -> False|>,
+Magnification->0.75,
+FrontEndVersion->"13.2 for Microsoft Windows (64-bit) (January 30, 2023)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"2cc12be0-3429-4e84-89b1-d388a5c2ee4a"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 889, 15, 157, "Text",ExpressionUUID->"38914b23-829d-4144-8a81-65e73947adb5"],
+Cell[1450, 37, 732, 12, 82, "Text",ExpressionUUID->"4f33aa8c-124b-4205-a4fb-cb8c26be9361"],
+Cell[2185, 51, 4552, 103, 132, "Input",ExpressionUUID->"e9b21d9d-fb74-4d5b-bcc6-aa6309fef492"],
+Cell[6740, 156, 165, 3, 27, "Text",ExpressionUUID->"9a8c0b66-025c-4706-9908-7a1d72798239"],
+Cell[6908, 161, 2196, 48, 38, "Input",ExpressionUUID->"ce696cc9-0a5b-4df6-8b78-88881c8fbe4d"],
+Cell[9107, 211, 501, 9, 82, "Text",ExpressionUUID->"a0a6c597-6fc0-4310-9e95-50e197e41255"],
+Cell[CellGroupData[{
+Cell[9633, 224, 4033, 110, 181, "Input",ExpressionUUID->"aa65659c-25df-418c-8a5b-9ba8d557e782"],
+Cell[13669, 336, 1012, 29, 44, "Output",ExpressionUUID->"d48cb5eb-e67b-4e5c-992b-8007bbd84fe7"]
+}, Open  ]],
+Cell[14696, 368, 452, 9, 82, "Text",ExpressionUUID->"b163b56d-9c36-4fab-9523-8499d710a7d5"],
+Cell[CellGroupData[{
+Cell[15173, 381, 7191, 212, 300, "Input",ExpressionUUID->"7927c9e8-5d9a-4f05-96bd-a1a876501829"],
+Cell[22367, 595, 1096, 30, 52, "Output",ExpressionUUID->"acfd3613-51bb-42dc-8072-1030f13b944d"],
+Cell[23466, 627, 661, 10, 96, "Output",ExpressionUUID->"0b33b56d-951c-455d-9305-1e0ce02829e8"],
+Cell[24130, 639, 359, 5, 39, "Output",ExpressionUUID->"7dc76abf-80ba-4fc9-8a69-4b70b71306ab"],
+Cell[24492, 646, 537, 8, 67, "Output",ExpressionUUID->"68fbee77-9953-463d-a2e0-d2c0ebf096e3"]
+}, Open  ]],
+Cell[25044, 657, 383, 8, 63, "Text",ExpressionUUID->"01accca2-60c5-42cf-9bde-dce884b0cadc"],
+Cell[CellGroupData[{
+Cell[25452, 669, 2136, 59, 115, "Input",ExpressionUUID->"a01ee5a9-aca5-45a0-bf88-45100ddcce8b"],
+Cell[27591, 730, 1059, 31, 52, "Output",ExpressionUUID->"48b78d89-5ab5-471e-af5e-6c71d269df4d"],
+Cell[28653, 763, 882, 26, 50, "Output",ExpressionUUID->"72b1944f-8351-474c-8ea1-8839d3045022"],
+Cell[29538, 791, 408, 6, 67, "Output",ExpressionUUID->"08abda76-cb4e-44a7-99a7-cfd4bb555419"],
+Cell[29949, 799, 403, 5, 67, "Output",ExpressionUUID->"bb2c6d4c-8ae8-41ad-b6ee-9f2a0f0e6662"]
+}, Open  ]]
+}
+]
+*)
+

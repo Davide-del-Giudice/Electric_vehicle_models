@@ -1,0 +1,400 @@
+module EV(bus1d,bus1q,tap); 		
+
+input  bus1d, bus1q, tap;
+
+electrical bus1d, bus2d, bus1q, bus2q, tap;
+electrical v0d_pan, v0q_pan, i0d_pan, i0q_pan, ed_pan, eq_pan;
+electrical v0d, v0q, i0d, i0q, ed, eq;
+electrical p_EV, q_EV, p_EV_pu, q_EV_pu, p_CONV, q_CONV;
+electrical dw, omega, theta;                           
+electrical v_DC, id_ref, iq_ref;                        
+electrical reg_d,reg_q;                         
+electrical i_ind,v_cap;                         
+electrical ACDC_t1;                    
+electrical DCDC_t1, DCDC_t2;           
+electrical duty, error_duty;                    
+electrical CC_mode,    CP_mode,   CV_mode;      
+electrical v_cell_ocv, v_cell,    i_cell;	
+electrical v_batt,     i_batt,    p_batt; 	
+electrical v_batt_pu,  i_batt_pu, p_batt_pu;	
+electrical batt_t1,    cell_t1,   cell_t2;    
+electrical soc, d_soc, status;
+
+electrical error_vdc, error_q, error_id, error_iq;
+electrical error_theta;
+
+//electrical tmp1;
+//electrical tmp2;
+
+
+parameter integer 	N_SERIES       = 12	 alterable;
+parameter integer  	N_PARALLEL     = 73	 alterable;
+parameter integer 	CPCV           = 1	 alterable;
+
+parameter real          V_AC_1         = 800     alterable;
+parameter real          V_AC_2         = 400     alterable;
+parameter real          MAX_TAP        = 1.8     alterable;
+parameter real          MIN_TAP        = 0.2     alterable;
+parameter real          V_DC_NOM       = 800     alterable;
+parameter real          P_EV_NOM       = 50k     alterable;
+parameter real          V_EV_NOM       = 400     alterable;
+parameter real          V_THRESHOLD    = 3.5085	 alterable;
+parameter real 		SOC_0          = 1	 alterable;
+parameter real 		ETA_CHARGE     = 1	 alterable;
+parameter real 		Q_NOM          = 1	 alterable;
+parameter real	 	R_INT          = 8m	 alterable;
+parameter real  	W_NOM          = 2*pi*50 alterable;
+parameter real  	Q_REF          = 0  	 alterable;
+
+parameter real  	KP_PLL         = 490	 alterable;
+parameter real  	KI_PLL         = 122.5k	 alterable;
+parameter real  	KP_I           = 0.142	 alterable;
+parameter real  	KI_I           = 43.909	 alterable;
+parameter real  	KP_V_DC        = 0.6	 alterable;
+parameter real  	KI_V_DC        = 1	 alterable;
+parameter real  	KP_Q           = 100	 alterable;
+parameter real  	KI_Q           = 1000	 alterable;
+parameter real  	KP_DCDC        = 1000    alterable;
+parameter real  	KI_DCDC        = 0.1	 alterable;
+
+parameter real          L_ACDC_PU      = 0.059   alterable;
+parameter real          R_ACDC_PU      = 0.01    alterable;
+
+parameter real          C_ACDC         = 1m*25   alterable;
+parameter real          L_DCDC         = 0.1m   alterable;
+parameter real          C_DCDC         = 0.5m    alterable;
+
+real 			P_AC_NOM, V_AC_NOM, I_AC_NOM;
+real                    Z_AC_NOM, R_ACDC, L_ACDC, N_RATIO;
+real                    I_EV_NOM;
+real 			P_BATT_REF, V_BATT_REF, I_BATT_REF, V_DC_REF;
+integer 		CCCV;
+real 			charge_efficiency;
+real 			theta_init,        duty_init;
+real 			v_C_init,    	   i_L_init;
+real 			v_ocv_init, 	   v_cell_init, p_batt_init;
+real 			id_ref_init, 	   iq_ref_init, reg_d_init,  reg_q_init;
+real                    iC;
+real                    v0d_init;
+
+analog begin
+
+P_AC_NOM    = P_EV_NOM;
+V_AC_NOM    = V_AC_2;
+I_AC_NOM    = P_AC_NOM/(3*V_AC_NOM);
+Z_AC_NOM    = V_AC_NOM/I_AC_NOM;
+R_ACDC      = R_ACDC_PU*Z_AC_NOM;
+L_ACDC      = L_ACDC_PU*Z_AC_NOM/W_NOM;
+N_RATIO     = V_AC_1/V_AC_2;
+
+V_DC_REF    = V_DC_NOM/V_DC_NOM;
+CCCV        = 1 - CPCV;
+//I_EV_NOM    = P_EV_NOM/V_EV_NOM;
+I_EV_NOM    = P_EV_NOM/(V_THRESHOLD*N_SERIES);
+P_BATT_REF  = P_EV_NOM;
+V_BATT_REF  = V_THRESHOLD*N_SERIES;
+I_BATT_REF  = P_BATT_REF/V_BATT_REF;
+
+	if( analysis("dc") )
+	{ 
+    // ---------------------------------------------------------------------------------- //
+    // --------------------------       INITIALIZATION       ---------------------------- //
+    // ---------------------------------------------------------------------------------- //
+    		
+		v_ocv_init  = $table_model("CCC", SOC_0*100, "SOC", "OCV");
+
+
+		// BATTERY AND DC-DC CONVERTER INITIALIZATION
+		if (CCCV == 1) // CCCV mode
+		//{v_cell_init  = R_INT*I_BATT_REF/N_PARALLEL + v_ocv_init;
+		{v_cell_init  = R_INT*I_EV_NOM/N_PARALLEL + v_ocv_init;
+
+			if (v_cell_init < V_THRESHOLD) 
+			       {v(CC_mode)  <+ 1;
+				v(CV_mode)  <+ 0;
+				v(CP_mode)  <+ 0;
+				//i_L_init    =  I_BATT_REF; 
+				i_L_init    =  I_EV_NOM; 
+				v_C_init    =  v_cell_init*N_SERIES; 
+				duty_init   =  v_cell_init*N_SERIES/V_DC_NOM; 
+				v(duty)     <+ duty_init;}				 
+			 else 
+			       {v(CC_mode)  <+ 0;
+				v(CV_mode)  <+ 1;
+				v(CP_mode)  <+ 0;
+				i_L_init    =  (V_THRESHOLD - v_ocv_init)/R_INT*N_PARALLEL; 
+				v_C_init    =  V_THRESHOLD*N_SERIES; 
+				duty_init   =  V_THRESHOLD*N_SERIES/V_DC_NOM; 
+				v(duty)     <+ duty_init;}
+			}
+		else         // CPCV  mode
+		        {v_cell_init  = 1/2*(v_ocv_init + sqrt(pow(v_ocv_init,2) + 
+					4*P_BATT_REF*R_INT/(N_SERIES*N_PARALLEL)));
+
+			if (v_cell_init < V_THRESHOLD)
+			       {v(CC_mode)  <+ 0;
+				v(CV_mode)  <+ 0;
+				v(CP_mode)  <+ 1;
+				i_L_init    =  (v_cell_init - v_ocv_init)/R_INT*N_PARALLEL; 
+				v_C_init    =  v_cell_init*N_SERIES; 
+				duty_init   =  v_cell_init*N_SERIES/V_DC_NOM; 
+				v(duty)     <+ duty_init;} 
+			else 
+			       {v(CC_mode)  <+ 0;
+				v(CV_mode)  <+ 1;
+				v(CP_mode)  <+ 0;
+				i_L_init    =  (V_THRESHOLD - v_ocv_init)/R_INT*N_PARALLEL; 
+				v_C_init    =  V_THRESHOLD*N_SERIES; 
+				duty_init   =  V_THRESHOLD*N_SERIES/V_DC_NOM; 
+				v(duty)     <+ duty_init; }
+			}
+	        
+		p_batt_init =  v_C_init*i_L_init;
+		v(error_duty) <+ 0;
+
+		// AC-DC INIZIALIZATION (HP: Q_REF = 0)
+                theta_init  = atan2(v(bus1q),v(bus1d));		
+
+		v0d_init    = sqrt(pow(v(v0d_pan),2)+pow(v(v0q_pan),2))/V_AC_NOM*
+			       	cos(atan2(v(v0q_pan),v(v0d_pan))-theta_init)*(sqrt(3));
+	
+		id_ref_init = (v0d_init -
+				sqrt(max(0,pow(v0d_init,2) -
+				4*p_batt_init/P_EV_NOM*R_ACDC_PU)))/(2*R_ACDC_PU);
+	
+		iq_ref_init = 0;
+	
+		reg_d_init  = -R_ACDC_PU*id_ref_init;
+		reg_q_init  = -R_ACDC_PU*iq_ref_init;
+	
+	
+		v(error_theta)  <+ 0;
+		v(error_vdc)    <+ 0;
+		v(error_q)    	<+ 0;	
+		v(error_id) 	<+ 0;
+		v(error_iq) 	<+ 0;
+	
+	}
+	else 
+	{
+
+		// BATTERY
+		if(CPCV == 1)  // CPCV mode
+		   {v(CC_mode) <+ 0;
+		    if(v(v_cell) < V_THRESHOLD && v(CV_mode) == 0) 
+		    	   {v(CP_mode) <+ 1;
+			    v(CV_mode) <+ 0;}
+		    else 
+		    	   {v(CP_mode) <+ 0;
+			    v(CV_mode) <+ 1;}
+		   }
+		else          // CCCV mode
+		   {v(CP_mode) <+ 0;
+		    if((v(v_cell) < V_THRESHOLD) && v(CV_mode) == 0) 
+			   {v(CC_mode) <+ 1;
+			    v(CV_mode) <+ 0;}
+		    else
+			   {v(CC_mode) <+ 0;
+			    v(CV_mode) <+ 1;}
+		   }
+
+/*
+	       v(error_duty)  	<+ (I_BATT_REF/I_EV_NOM - v(i_batt_pu))*v(CC_mode) + 
+				   (V_BATT_REF/V_EV_NOM - v(v_batt_pu))*v(CV_mode) + 
+				   (P_BATT_REF/P_EV_NOM - v(p_batt_pu))*v(CP_mode);
+*/
+
+	       v(error_duty)  	<+ (I_EV_NOM/I_EV_NOM - v(i_batt_pu))*v(CC_mode) + 
+				   (V_BATT_REF/V_EV_NOM - v(v_batt_pu))*v(CV_mode) + 
+				   (P_BATT_REF/P_EV_NOM - v(p_batt_pu))*v(CP_mode);
+	
+
+		v(error_theta) <+ v(v0q);
+		v(error_vdc)   <+ V_DC_REF-v(v_DC);
+		v(error_q)     <+ -Q_REF/P_EV_NOM+v(q_EV_pu);	
+		v(error_id)    <+ v(id_ref)-v(i0d);
+		v(error_iq)    <+ v(iq_ref)-v(i0q);
+	 
+	}
+
+
+	// ------------------------       AC INTERFACE        ---------------------------- //
+
+/*
+        // D-AXIS
+        v(bus2d)               <+   v(bus1d)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+        i(bus1d)               <+  -i(bus2d)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+	v(bus2d)               <+  R_ACDC/9*i(bus2d) - L_ACDC/9*W_NOM*v(i0q_pan) + v(ed_pan);
+
+        // Q-AXIS
+        v(bus2q)               <+   v(bus1q)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+        i(bus1q)               <+  -i(bus2q)*max(MIN_TAP,min(MAX_TAP,v(tap)))/N_RATIO;
+	v(bus2q)               <+  R_ACDC/9*i(bus2q) + L_ACDC/9*W_NOM*v(i0d_pan) + v(eq_pan);
+*/
+
+	// D-AXIS
+	v(bus1d)               <+   v(bus2d)/max(MIN_TAP,min(MAX_TAP,v(tap)))*N_RATIO; 
+	i(bus2d)               <+  -i(bus1d)/max(MIN_TAP,min(MAX_TAP,v(tap)))*N_RATIO; 	
+	v(bus2d)               <+  R_ACDC/9*i(bus2d) - L_ACDC/9*W_NOM*v(i0q_pan) + v(ed_pan);
+	
+	// Q-AXIS
+	v(bus1q)               <+   v(bus2q)/max(MIN_TAP,min(MAX_TAP,v(tap)))*N_RATIO; 
+	i(bus2q)               <+  -i(bus1q)/max(MIN_TAP,min(MAX_TAP,v(tap)))*N_RATIO; 	
+	v(bus2q)               <+  R_ACDC/9*i(bus2q) + L_ACDC/9*W_NOM*v(i0d_pan) + v(eq_pan);
+
+	// MEASUREMENTS
+	v(v0d_pan)             <+ v(bus2d);
+	v(v0q_pan)             <+ v(bus2q);
+	v(i0d_pan)             <+ i(bus2d);
+	v(i0q_pan)             <+ i(bus2q);
+
+	v(p_EV)                <+  v(v0d_pan)*v(i0d_pan)+ v(v0q_pan)*v(i0q_pan);
+	v(q_EV)                <+ -v(v0d_pan)*v(i0q_pan)+ v(v0q_pan)*v(i0d_pan);
+
+	v(p_EV_pu)             <+  v(p_EV)/P_EV_NOM;
+	v(q_EV_pu)             <+  v(q_EV)/P_EV_NOM;
+
+	v(p_CONV)              <+  v(ed_pan)*v(i0d_pan) + v(eq_pan)*v(i0q_pan);
+	v(q_CONV)              <+ -v(ed_pan)*v(i0q_pan) + v(eq_pan)*v(i0d_pan);
+
+
+	v(v0d)                 <+ sqrt(pow(v(v0d_pan),2)+pow(v(v0q_pan),2))/V_AC_NOM*
+				       	cos(atan2(v(v0q_pan),v(v0d_pan))-v(theta))*(sqrt(3));
+	
+	v(v0q)                 <+ sqrt(pow(v(v0d_pan),2)+pow(v(v0q_pan),2))/V_AC_NOM*
+					sin(atan2(v(v0q_pan),v(v0d_pan))-v(theta))*(sqrt(3));
+	
+	v(i0d)                 <+ sqrt(pow(v(i0d_pan),2)+pow(v(i0q_pan),2))/(I_AC_NOM)*
+				       	cos(atan2(v(i0q_pan),v(i0d_pan))-v(theta))*(sqrt(3)/9);
+
+	v(i0q)                 <+ sqrt(pow(v(i0d_pan),2)+pow(v(i0q_pan),2))/(I_AC_NOM)*
+				       	sin(atan2(v(i0q_pan),v(i0d_pan))-v(theta))*(sqrt(3)/9);
+
+
+	v(ed_pan)              <+ sqrt(pow(v(ed),2)+pow(v(eq),2))*V_AC_NOM*
+				       	cos(atan2(v(eq),v(ed))+v(theta))/(sqrt(3));
+	
+	v(eq_pan)              <+ sqrt(pow(v(ed),2)+pow(v(eq),2))*V_AC_NOM*
+				       	sin(atan2(v(eq),v(ed))+v(theta))/(sqrt(3));
+	
+	
+	// ------------------------  AC-DC CONVERTER CONTROLS ---------------------------- //
+	
+	/* SAFE VERSION
+	// PLL
+	i(theta)        	<+ v(theta) - 
+				   (KP_PLL*v(error_theta) + 
+				    idt(KI_PLL*v(error_theta),theta_init));
+
+
+	i(dw)           	<+ v(dw) + 5/(2*pi)*ddt(v(dw)) + ddt(v(theta));
+	v(omega)        	<+ v(dw) + W_NOM;
+*/
+
+	// PLL
+	i(dw)            	<+ v(dw) - 
+				   (KP_PLL*v(error_theta) + 
+				    idt(KI_PLL*v(error_theta)));
+	v(omega)        	<+ v(dw) + W_NOM;  
+	//v(theta)           	<+ idt(v(omega),theta_init);
+	v(theta)           	<+ idt(v(dw),theta_init);
+
+	// REACTIVE POWER REGULATION
+	i(iq_ref)        	<+ v(iq_ref) -
+			   	   (KP_Q*v(error_q) + 
+			   	   idt(KI_Q*v(error_q),iq_ref_init));
+	
+	// DC-VOLTAGE REGULATION
+	v(v_DC)          	<+ v(ACDC_t1)/V_DC_NOM;
+	i(id_ref)        	<+ v(id_ref) -
+			   	   (KP_V_DC*v(error_vdc) + 
+			           idt(KI_V_DC*v(error_vdc),id_ref_init));
+
+	// INNER LOOP (D-AXIS)
+	i(reg_d)        	<+ v(reg_d) - 
+			   	   (KP_I*v(error_id) +
+			   	   idt(KI_I*v(error_id),reg_d_init));
+  
+	// INNER LOOP (Q-AXIS)
+	i(reg_q)                <+ v(reg_q) -
+			   	   (KP_I*v(error_iq) + 
+			   	    idt(KI_I*v(error_iq),reg_q_init));
+	
+	v(ed)           	<+ v(v0d) + v(reg_d) + v(i0q)*v(omega)*L_ACDC_PU/W_NOM;
+	v(eq)                   <+ v(v0q) + v(reg_q) - v(i0d)*v(omega)*L_ACDC_PU/W_NOM;
+
+
+	
+	// ------------------------  AC-DC "TRICKY" CONNECTION ------------------------- //
+
+	iC                       =  v(p_CONV)/max(1m,v(ACDC_t1))-
+			            idt(1/L_DCDC*(v(DCDC_t1)-v(DCDC_t2)),i_L_init)*v(duty);
+	v(ACDC_t1)              <+  idt(1/C_ACDC*iC,V_DC_NOM);
+		
+
+        // ------------------------  DC-DC CONVERTER MODEL ---------------------------- //
+
+        v(DCDC_t1)              <+  v(ACDC_t1)*v(duty);
+        i(DCDC_t1,DCDC_t2)      <+  idt(1/L_DCDC*(v(DCDC_t1)-v(DCDC_t2)),i_L_init);
+        v(DCDC_t2)              <+  idt(1/C_DCDC*i(DCDC_t2),v_C_init);
+        v(DCDC_t2,batt_t1)      <+  0;
+       
+        // sensing inductor current and capacitor voltage
+       	v(i_ind)                <+  idt(1/L_DCDC*(v(DCDC_t1)-v(DCDC_t2)),i_L_init); 
+       	v(v_cap)                <+  v(DCDC_t2);        
+
+	// -----------------------------  BATTERY MODEL ------------------------------- //
+
+        // BATTERY CIRCUIT
+        v(batt_t1)              <+  v(cell_t1)*N_SERIES;
+
+        // CELL CIRCUIT
+        if (v(i_cell) > 0)
+            charge_efficiency = ETA_CHARGE;
+        else
+            charge_efficiency = 1;
+
+        i(cell_t1)              <+ -i(batt_t1)/N_PARALLEL;
+        v(cell_t1)              <+ R_INT*i(cell_t1) + v(cell_t2);
+        v(cell_t2)              <+ $table_model("CCC", v(soc)*100, "SOC", "OCV");
+        v(soc)                  <+ max(0-1u,min(1,idt(v(d_soc),SOC_0)));
+    //    v(soc)                  <+ SOC_0;
+        
+	v(d_soc)                <+ v(i_cell)*charge_efficiency/(Q_NOM*3600);
+
+        // ADDITIONAL MEASUREMENTS
+        v(v_cell_ocv)           <+ v(cell_t2);
+        v(v_cell)               <+ v(cell_t1);
+        v(i_cell)               <+ i(cell_t1);
+
+        v(v_batt)               <+ v(batt_t1);
+        v(i_batt)               <+ i(batt_t1);
+	v(p_batt)               <+ v(batt_t1)*v(i_batt);
+
+        v(v_batt_pu)            <+ v(v_batt)/V_EV_NOM;
+        v(i_batt_pu)            <+ v(i_batt)/I_EV_NOM;
+        v(p_batt_pu)            <+ v(p_batt)/P_EV_NOM;
+
+        // DUTY CYCLE CONTROL
+        i(duty)                 <+ v(duty) -
+                                   (KP_DCDC*v(error_duty) +
+                                   idt(KI_DCDC*v(error_duty),duty_init));
+
+	// ASSIGN STATUS TO EV  [STATUS (0: CC, 1:CV, 2:CP)]
+	if(v(CC_mode) == 1)                  
+		{v(status) <+ 0;}
+	else
+	{
+		 if(v(CV_mode) == 1)
+			{v(status) <+ 1;}
+		else
+			{v(status) <+ 2;}
+	}
+
+
+//	v(tmp1)   <+ id_ref_init;
+//	v(tmp2) <+ v(p_CONV)/max(1m,v(ACDC_t1))+i(DCDC_t1)*v(duty);
+  
+end
+
+endmodule

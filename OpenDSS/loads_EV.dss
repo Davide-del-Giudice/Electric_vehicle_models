@@ -1,0 +1,30 @@
+!to use right EV model, set model=9
+New	ElectricVehicle.EV_10548933 phases=3	bus=ld_10548933.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10540312 phases=3	bus=ld_10540312.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1	
+New      ElectricVehicle.EV_10526890 phases=3	bus=ld_10526890.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_34090007 phases=3	bus=ld_34090007.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10580150 phases=3	bus=ld_10580150.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_20114730 phases=3	bus=ld_20114730.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1	
+New	ElectricVehicle.EV_10558507 phases=3	bus=ld_10558507.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1	
+New	ElectricVehicle.EV_20396677 phases=3	bus=ld_20396677.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10548965 phases=3	bus=ld_10548965.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1	
+New	ElectricVehicle.EV_34090004 phases=3	bus=ld_34090004.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1	
+New	ElectricVehicle.EV_10540314 phases=3	bus=ld_10540314.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+
+New	ElectricVehicle.EV_10558522 phases=3	bus=ter_10558522.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10548910 phases=3	bus=ter_10548910.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10549229 phases=3	bus=ter_10549229.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10549221 phases=3	bus=ter_10549221.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10549217 phases=3	bus=ter_10549217.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10549276 phases=3	bus=ter_10549276.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_34085038 phases=3	bus=ter_34085038.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10558471 phases=3	bus=ter_10558471.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_34090753 phases=3	bus=ter_34090753.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_34084952 phases=3	bus=ter_34084952.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_34092155 phases=3	bus=ter_34092155.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_34085341 phases=3	bus=ter_34085341.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_34085489 phases=3	bus=ter_34085489.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10548928 phases=3	bus=ter_10548928.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10558513 phases=3	bus=ter_10558513.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10553426 phases=3	bus=ter_10553426.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
+New	ElectricVehicle.EV_10544883 phases=3	bus=ter_10544883.1.2.3	kV=0.48	kW=50 pf=1 Vminpu=0.85 Vmaxpu=1.15	model=1
