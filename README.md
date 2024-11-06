@@ -21,7 +21,7 @@ Warning: before executing these scripts create these three folder in the same di
 
 Concerning OpenDSS, all the files needed to simulate the k1 feeder in the same conditions are available in the "OpenDSS" folder.
 
-Lastly, the Mathematica notebook "EV_dynamic_model" shows how to derive the transfer functions employed by the EV reduced model. 
+Lastly, the Mathematica notebooks "EV_static" and "EV_dynamic" shows how to derive the equations of the static (blocks 2, 3, 5 of Figure 2) and the transfer functions in block 6 of Fig. 6 employed by the proposed EV model. 
 
 
 
