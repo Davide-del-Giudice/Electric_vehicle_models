@@ -19,7 +19,7 @@ The .pan files can be described as follows:
 
 Warning: before executing these scripts create these three folder in the same directory: "SWEEP_FLEET_EV", "CHARGE_COMPARISON", and "DYN_OVERLOAD_EV".
 
-Concerning OpenDSS, all the files needed to simulate the k1 feeder in the same conditions are available in the "OpenDSS" folder.
+Concerning OpenDSS, all the files needed to simulate the k1 feeder in the same conditions are available in the "OpenDSS" folder. The opendss.exe and .dll files are necessary to use the proposed EV model on OPENDSS and the Matlab interface. 
 
 Lastly, the Mathematica notebooks "EV_static" and "EV_dynamic" shows how to derive the equations of the static (blocks 2, 3, 5 of Figure 2) and the transfer functions in block 6 of Fig. 6 employed by the proposed EV model. 
 
